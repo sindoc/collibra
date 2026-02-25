@@ -1,0 +1,31 @@
+[package]
+name        = "persistence"
+version     = "1.0.0"
+edition     = "2021"
+description = "Singine persistence engine — ID gen, shortest-path, gRPC"
+repository  = "https://github.com/sindoc/collibra"
+
+[[bin]]
+name = "persistence"
+path = "src/main.rs"
+
+[dependencies]
+# SQLite
+rusqlite    = { version = "0.31", features = ["bundled"] }
+# Serialization
+serde       = { version = "1", features = ["derive"] }
+serde_json  = "1"
+# CLI args
+clap        = { version = "4", features = ["derive"] }
+# UUID for gen_id
+uuid        = { version = "1", features = ["v4"] }
+# Time
+chrono      = { version = "0.4", features = ["serde"] }
+# Logging
+tracing     = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[profile.release]
+opt-level   = 3
+strip       = true
+lto         = true

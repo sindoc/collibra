@@ -1,0 +1,25 @@
+; open.dbc — Singine ODBC-style Data Source Name (DSN) configuration
+; Install with: pip install mysql-connector-python pyhive
+; Usage: python3 db_driver.py --alias singine_sqlite_dev
+
+[singine_sqlite_dev]
+driver   = sqlite
+database = singine.db
+
+[singine_sqlite_prod]
+driver   = sqlite
+database = /var/singine/prod/singine.db
+
+[singine_mariadb]
+driver   = mariadb
+host     = localhost
+port     = 3306
+database = singine
+; user and password from env: DB_USER / DB_PASS
+
+[singine_hive]
+driver   = hive
+host     = localhost
+port     = 10000
+database = singine
+; user from env: DB_USER

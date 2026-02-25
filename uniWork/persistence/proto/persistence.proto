@@ -1,0 +1,132 @@
+syntax = "proto3";
+// persistence.proto — Singine gRPC service definitions
+// Covers: email send, schema migration, lineage query, shortest-path, categories
+
+package singine.persistence.v1;
+
+option java_package       = "io.lutino.singine.persistence";
+option java_outer_classname = "SingineProto";
+option go_package         = "github.com/sindoc/collibra/persistence/v1";
+
+// ── Email service (relayed from C TCP → Python → Clojure) ────────────────────
+service EmailService {
+  rpc SendEmail    (EmailRequest)    returns (EmailResponse);
+  rpc GetStatus    (StatusRequest)   returns (StatusResponse);
+}
+
+message EmailRequest {
+  string from    = 1;
+  string to      = 2;
+  string subject = 3;
+  string body    = 4;
+  string session_id = 5;
+}
+
+message EmailResponse {
+  bool   ok          = 1;
+  string message_id  = 2;
+  string error       = 3;
+  string lineage_id  = 4;
+}
+
+// ── Persistence / migration service ──────────────────────────────────────────
+service PersistenceService {
+  rpc Migrate      (MigrateRequest)   returns (MigrateResponse);
+  rpc QueryLineage (LineageRequest)   returns (LineageResponse);
+  rpc ShortestPath (PathRequest)      returns (PathResponse);
+  rpc GenId        (GenIdRequest)     returns (GenIdResponse);
+}
+
+message MigrateRequest {
+  string target_env    = 1;  // raw, base, staging, master, prod
+  string schema_ver    = 2;
+  string db_alias      = 3;
+}
+
+message MigrateResponse {
+  bool   ok            = 1;
+  string applied_ver   = 2;
+  repeated string migrations_run = 3;
+  string error         = 4;
+}
+
+message LineageRequest {
+  string commit_sha    = 1;
+  string branch        = 2;
+  string phase         = 3;  // raw, base, master
+}
+
+message LineageResponse {
+  bool   ok            = 1;
+  string gen_id        = 2;
+  string urn           = 3;
+  string parent_id     = 4;
+  string phase         = 5;
+  string created_at    = 6;
+}
+
+// ── Shortest-path request (Rust quicksort engine) ────────────────────────────
+message PathRequest {
+  string src_id        = 1;
+  string dst_id        = 2;
+  string edge_type     = 3;  // similarity, lineage, category, ldap_parent
+  string db_alias      = 4;
+}
+
+message PathResponse {
+  bool   ok            = 1;
+  repeated string path = 2;  // ordered list of gen_ids
+  double total_weight  = 3;
+  string algorithm     = 4;  // dijkstra+quicksort
+  string error         = 5;
+}
+
+// ── ID generation ─────────────────────────────────────────────────────────────
+message GenIdRequest {
+  string namespace     = 1;  // e.g. "lineage", "cat", "env"
+  string hint          = 2;  // optional human-readable suffix
+}
+
+message GenIdResponse {
+  string gen_id        = 1;  // inode-style unique ID
+  string urn           = 2;  // urn:singine:<namespace>:<gen_id>
+  int64  inode         = 3;  // monotonic inode number
+}
+
+// ── Category service ──────────────────────────────────────────────────────────
+service CategoryService {
+  rpc Categorise   (CategoriseRequest)  returns (CategoriseResponse);
+  rpc Similarity   (SimilarityRequest)  returns (SimilarityResponse);
+}
+
+message CategoriseRequest {
+  string entity_id   = 1;
+  string entity_type = 2;
+  repeated string hint_categories = 3;
+}
+
+message CategoriseResponse {
+  bool   ok          = 1;
+  repeated CategoryScore scores = 2;
+}
+
+message CategoryScore {
+  string category_id  = 1;
+  string urn          = 2;
+  double score        = 3;
+  string dimension    = 4;
+  bool   validated    = 5;
+}
+
+message SimilarityRequest {
+  string src_id = 1;
+  string dst_id = 2;
+  string method = 3;  // hierarchical, categorical, cosine
+}
+
+message SimilarityResponse {
+  bool   ok         = 1;
+  double similarity = 2;
+  string method     = 3;
+  string path_id    = 4;  // FK to path_results
+}

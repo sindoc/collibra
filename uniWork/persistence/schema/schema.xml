@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  schema.xml — Singine persistence schema manifest
+  XML lang: UTF-8, URN-addressable, version-controlled
+  Namespace map follows W3C conventions + Singine URNs
+-->
+<singine:schema
+  xmlns:singine="urn:singine:schema:v1"
+  xmlns:dc="http://purl.org/dc/elements/1.1/"
+  xmlns:foaf="http://xmlns.com/foaf/0.1/"
+  xmlns:doap="http://usefulinc.com/ns/doap#"
+  xmlns:skos="http://www.w3.org/2004/02/skos/core#"
+  xmlns:rss="http://purl.org/rss/1.0/"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="urn:singine:schema:v1 schema.xsd"
+  version="003"
+  encoding="UTF-8"
+  created="2026-02-25">
+
+  <dc:title>Singine Persistence Schema</dc:title>
+  <dc:creator>sindoc/collibra</dc:creator>
+  <dc:description>
+    Multi-dimensional, URN-addressable data schema for the Singine persistence
+    layer. Supports SQLite, MariaDB, Hive. Full lineage by design.
+  </dc:description>
+
+  <!-- ── Namespace URN map ─────────────────────────────────────────────── -->
+  <singine:namespaces>
+    <singine:ns prefix="singine" urn="urn:singine:"        base="https://lutino.io/singine/"/>
+    <singine:ns prefix="cat"     urn="urn:singine:cat:"    base="https://lutino.io/singine/cat/"/>
+    <singine:ns prefix="lin"     urn="urn:singine:lin:"    base="https://lutino.io/singine/lineage/"/>
+    <singine:ns prefix="env"     urn="urn:singine:env:"    base="https://lutino.io/singine/env/"/>
+    <singine:ns prefix="entity"  urn="urn:singine:entity:" base="https://lutino.io/singine/entity/"/>
+    <singine:ns prefix="foaf"    urn="http://xmlns.com/foaf/0.1/"/>
+    <singine:ns prefix="doap"    urn="http://usefulinc.com/ns/doap#"/>
+    <singine:ns prefix="rss"     urn="http://purl.org/rss/1.0/"/>
+  </singine:namespaces>
+
+  <!-- ── Migration versions ────────────────────────────────────────────── -->
+  <singine:migrations>
+    <singine:migration version="V001" file="V001__init.sql"
+      description="Base init: pipeline_runs, env_migrations"/>
+    <singine:migration version="V002" file="V002__lineage.sql"
+      description="Lineage: lineage, ldap_entities, rss_feed, db_connections"/>
+    <singine:migration version="V003" file="V003__categories.sql"
+      description="Categories, similarity_edges, path_results, semantic_records"/>
+  </singine:migrations>
+
+  <!-- ── Supported databases ───────────────────────────────────────────── -->
+  <singine:drivers>
+    <singine:driver id="sqlite"  dialect="sqlite"  version="3.x"
+      urn="urn:singine:driver:sqlite"/>
+    <singine:driver id="mariadb" dialect="mysql"   version="10.x+"
+      urn="urn:singine:driver:mariadb" odbc-dsn="singine_mariadb"/>
+    <singine:driver id="hive"    dialect="hiveql"  version="3.x"
+      urn="urn:singine:driver:hive"    odbc-dsn="singine_hive"/>
+  </singine:drivers>
+
+  <!-- ── Category dimensions ───────────────────────────────────────────── -->
+  <singine:dimensions>
+    <singine:dim id="main"       urn="urn:singine:cat:main"
+      boolean="true" hierarchical="true" weight="1.0"/>
+    <singine:dim id="primary"    urn="urn:singine:cat:primary"
+      boolean="true" hierarchical="true" weight="0.9"/>
+    <singine:dim id="secondary"  urn="urn:singine:cat:secondary"
+      boolean="true" hierarchical="true" weight="0.7"/>
+    <singine:dim id="n_linear"   urn="urn:singine:cat:n_linear"
+      boolean="false" hierarchical="false" weight="0.5"/>
+    <singine:dim id="relational" urn="urn:singine:cat:relational"
+      boolean="true" hierarchical="true" weight="0.8"/>
+    <singine:dim id="boolean"    urn="urn:singine:cat:boolean"
+      boolean="true" hierarchical="false" weight="0.6"/>
+  </singine:dimensions>
+
+  <!-- ── LDAP tree root ────────────────────────────────────────────────── -->
+  <singine:ldap base-dn="dc=singine,dc=io">
+    <singine:ou dn="ou=Projects,dc=singine,dc=io"/>
+    <singine:ou dn="ou=Services,dc=singine,dc=io"/>
+    <singine:ou dn="ou=Users,dc=singine,dc=io"/>
+  </singine:ldap>
+
+</singine:schema>

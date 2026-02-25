@@ -1,0 +1,42 @@
+;; connections.edn — Singine EDN connection registry
+;; Read by Clojure layer and smtpAgent meta-config.
+;; Credentials always from environment variables — never stored here.
+
+{:connections
+ {:sqlite-dev
+  {:driver   :sqlite
+   :database "singine.db"
+   :urn      "urn:singine:driver:sqlite:dev"}
+
+  :sqlite-prod
+  {:driver   :sqlite
+   :database "/var/singine/prod/singine.db"
+   :urn      "urn:singine:driver:sqlite:prod"}
+
+  :mariadb
+  {:driver   :mariadb
+   :host     "localhost"
+   :port     3306
+   :database "singine"
+   :user-env "DB_USER"
+   :pass-env "DB_PASS"
+   :urn      "urn:singine:driver:mariadb"}
+
+  :hive
+  {:driver   :hive
+   :host     "localhost"
+   :port     10000
+   :database "singine"
+   :user-env "DB_USER"
+   :urn      "urn:singine:driver:hive"}}
+
+ ;; Default connection per environment
+ :env-defaults
+ {:dev     :sqlite-dev
+  :staging :mariadb
+  :prod    :mariadb
+  :ci      :sqlite-dev}
+
+ ;; Migration path ordering (matches urn_map.json)
+ :migration-path
+ [:raw :base :staging :master :prod]}
