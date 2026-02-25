@@ -1,0 +1,42 @@
+{
+  "baseline": {
+    "id":          "baseline-investment-edge-cap-v1",
+    "capturedAt":  "2026-02-25T00:00:00Z",
+    "description": "Solid baseline measurements for investment data governance. All subsequent snapshots are compared against these values.",
+
+    "connectivity": {
+      "handshakeSuccessRate":   0.0,
+      "avgHandshakeLatencyMs":  0,
+      "endpointReachable":      false,
+      "note": "Populate after first successful bootstrap run"
+    },
+
+    "lineage": {
+      "totalAssets":              0,
+      "assetsWithLineage":        0,
+      "lineageCompleteness":      0.0,
+      "assetsWithOwner":          0,
+      "ownershipCoverage":        0.0
+    },
+
+    "maturity": {
+      "currentLevel":             "L1_Initial",
+      "investmentAssetsInDomain": 0,
+      "certifiedAssets":          0,
+      "certificationRate":        0.0
+    },
+
+    "financialTermCoverage": {
+      "totalTerms":               3,
+      "termsInCollibra":          0,
+      "coverageRate":             0.0,
+      "terms": ["Paid in Full", "Partial Payment", "Unpaid"]
+    },
+
+    "edgeCap": {
+      "concurrentMigrationsObserved": 0,
+      "edgeCapLimit":                 5,
+      "utilizationRate":              0.0
+    }
+  }
+}
