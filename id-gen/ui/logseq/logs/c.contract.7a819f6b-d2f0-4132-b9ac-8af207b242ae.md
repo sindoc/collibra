@@ -1,0 +1,9 @@
+- **[2026-02-26T21:03:40Z]** Step 1/7 — 14% — `DRAFT`
+  - EXTRACT: Collibra asset types enumerated
+  - Contract: `c.contract.7a819f6b-d2f0-4132-b9ac-8af207b242ae`
+- **[2026-02-26T21:03:40Z]** Step 2/7 — 28% — `DRAFT`
+  - CLASSIFY: Asset types mapped to SBVR Concept Types
+  - Contract: `c.contract.7a819f6b-d2f0-4132-b9ac-8af207b242ae`
+- **[2026-02-26T21:03:41Z]** Step 3/7 — 42% — `DRAFT`
+  - RELATE: ORM binary fact types identified
+  - Contract: `c.contract.7a819f6b-d2f0-4132-b9ac-8af207b242ae`
