@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE catalog PUBLIC "-//OASIS//DTD XML Catalogs V1.1//EN"
+  "http://www.oasis-open.org/committees/entity/release/1.1/catalog.dtd">
+<!--
+  Local override catalog — machine-specific paths.
+  Copy this file and edit for each deployment environment.
+  Referenced from catalog.xml via <nextCatalog/>.
+-->
+<catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog"
+         prefer="public">
+
+  <!-- Override: point to locally cached W3C schemas if offline -->
+  <!-- Example:
+  <uri name="http://www.w3.org/2004/02/skos/core#"
+       uri="file:///usr/local/share/xml/skos/skos.rdf"/>
+  -->
+
+  <!-- Saxon-HE / xmlresolver local cache -->
+  <uri name="https://xmlresolver.org/etc/catalog/catalog.xml"
+       uri="file:///usr/local/share/xmlresolver/catalog.xml"/>
+
+  <!-- Collibra API override for staging vs prod -->
+  <!-- <uri name="https://api-vlab.collibra.com/ontology/"
+            uri="http://staging.collibra.local/ontology/"/> -->
+
+</catalog>

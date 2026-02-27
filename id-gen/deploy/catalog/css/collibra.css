@@ -1,0 +1,150 @@
+/*
+ * collibra.css — id-gen dark theme
+ * Applies to: atom-aggregate HTML, progress.html, Logseq exports
+ * Aligned with: khakbaz.com | guiti.be | markupware.com | lutinio.io
+ */
+
+:root {
+  --bg:        #0d1117;
+  --surface:   #161b22;
+  --border:    #30363d;
+  --accent:    #238636;
+  --blue:      #1f6feb;
+  --text:      #e6edf3;
+  --muted:     #8b949e;
+  --warn:      #d29922;
+  --danger:    #da3633;
+  --ns-c-bg:   #0e4429;
+  --ns-c-fg:   #3fb950;
+  --ns-a-bg:   #1f2d3d;
+  --ns-a-fg:   #79c0ff;
+  --ns-b-bg:   #2d1f3d;
+  --ns-b-fg:   #d2a8ff;
+  --font-mono: 'SF Mono','Fira Code','Cascadia Code','Consolas',monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 16px; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  padding: 1.5rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* ── Typography ──────────────────────────────────────────────────────────── */
+h1 { font-size: 1.6rem; color: var(--ns-c-fg); margin-bottom: .25rem; }
+h2 { font-size: 1.2rem; color: #58a6ff; margin: 1.5rem 0 .5rem; }
+h3 { font-size: 1rem;   color: var(--text);  margin: 1rem 0 .25rem; }
+p  { margin-bottom: .75rem; color: var(--text); }
+a  { color: #58a6ff; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code, pre { font-family: var(--font-mono); font-size: .85rem; }
+pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: .75rem 1rem;
+  overflow-x: auto;
+  margin: .75rem 0;
+}
+code { background: var(--surface); padding: 1px 5px; border-radius: 4px; }
+
+/* ── Cards / Entries ─────────────────────────────────────────────────────── */
+.card, .entry {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+.card-header, .entry-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: .75rem;
+}
+
+/* ── Tables ──────────────────────────────────────────────────────────────── */
+table { border-collapse: collapse; width: 100%; margin: .75rem 0; font-size: .85rem; }
+th { background: var(--surface); color: var(--muted);
+     border-bottom: 2px solid var(--border); padding: .4rem .75rem; text-align: left; }
+td { border-bottom: 1px solid var(--border); padding: .4rem .75rem; }
+tr:hover td { background: rgba(255,255,255,.03); }
+
+/* ── Namespace chips ─────────────────────────────────────────────────────── */
+.ns-c { background: var(--ns-c-bg); color: var(--ns-c-fg); border: 1px solid var(--accent); }
+.ns-a { background: var(--ns-a-bg); color: var(--ns-a-fg); border: 1px solid var(--blue);   }
+.ns-b { background: var(--ns-b-bg); color: var(--ns-b-fg); border: 1px solid #8957e5; }
+.ns-c, .ns-a, .ns-b {
+  display: inline-block; font-size: .7rem; font-family: var(--font-mono);
+  padding: 2px 10px; border-radius: 12px; cursor: default;
+}
+.contract-id { @extend .ns-c; }
+
+/* ── Badges / status ─────────────────────────────────────────────────────── */
+.badge {
+  font-size: .68rem; padding: 2px 8px; border-radius: 12px;
+  font-family: var(--font-mono); display: inline-block;
+}
+.badge-draft    { background:#1f2d3d; color: var(--blue); }
+.badge-pending  { background:#341a00; color: var(--warn); }
+.badge-approved { background: var(--ns-c-bg); color: var(--ns-c-fg); }
+.badge-rejected { background:#3d0f0f; color: var(--danger); }
+
+/* ── Progress bar ────────────────────────────────────────────────────────── */
+.progress-wrap { margin: .75rem 0; }
+.progress-label {
+  display: flex; justify-content: space-between;
+  font-size: .72rem; color: var(--muted); margin-bottom: 4px;
+}
+
+/* ── Feed / Atom aggregated view ─────────────────────────────────────────── */
+.feed-header { margin-bottom: 1.5rem; }
+.feed-header h1 { color: var(--ns-c-fg); }
+.entry-title a { color: #58a6ff; font-weight: 600; }
+.entry-meta { font-size: .72rem; color: var(--muted); margin: .2rem 0; }
+.entry-summary { font-size: .85rem; color: var(--text); margin-top: .4rem; }
+
+/* ── Logseq markdown export compatibility ────────────────────────────────── */
+.logseq-page { font-family: var(--font-sans); }
+.logseq-page strong { color: #58a6ff; }
+blockquote {
+  border-left: 3px solid var(--border);
+  padding-left: 1rem;
+  color: var(--muted);
+  margin: .5rem 0;
+}
+
+/* ── Controls / forms ────────────────────────────────────────────────────── */
+button, input[type=submit] {
+  font-family: var(--font-mono); font-size: .78rem; padding: 6px 14px;
+  border-radius: 6px; cursor: pointer; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text); transition: all .15s;
+}
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button:hover   { border-color: #58a6ff; }
+input[type=text], select, textarea {
+  font-family: var(--font-mono); font-size: .78rem; padding: 6px 10px;
+  border-radius: 6px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text);
+}
+
+/* ── Site-specific overrides ─────────────────────────────────────────────── */
+
+/* khakbaz.com accent */
+.theme-khakbaz { --accent: #c0392b; --ns-c-fg: #e74c3c; }
+
+/* guiti.be accent */
+.theme-guiti    { --accent: #2980b9; --ns-c-fg: #3498db; }
+
+/* markupware.com accent */
+.theme-markupware { --accent: #8e44ad; --ns-c-fg: #9b59b6; }
+
+/* lutinio.io accent */
+.theme-lutinio  { --accent: #16a085; --ns-c-fg: #1abc9c; }

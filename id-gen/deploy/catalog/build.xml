@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  build.xml — Ant build for id-gen XSLT 3.0 / Atom pipeline
+  Norman Walsh-style: Saxon-HE + xmlresolver catalog resolution.
+
+  Prerequisites:
+    - Saxon-HE 12.x   → lib/saxon-he-12.x.jar
+    - xmlresolver      → lib/xmlresolver-5.x.jar  (Norman Walsh's resolver)
+    - Ant 1.10+
+
+  Targets:
+    init              Create directories
+    aggregate-atom    Run XSLT 3.0 Atom aggregator
+    transform         Apply identity.xsl to any XML source
+    db-init           Initialise SQLite databases
+    db-sync           Sync flat files to databases
+    server-start      Start id-gen server (net mode)
+    server-dmz        Start id-gen server (dmz mode)
+    inbox-start       Start WebDAV inbox watcher
+    full-deploy       init + db-init + db-sync + server-start + inbox-start
+    clean             Remove generated output
+
+  Sites:
+    guiti.be | khakbaz.com | markupware.com | lutinio.io
+-->
+<project name="id-gen" default="help" basedir=".">
+
+  <!-- ── Properties ─────────────────────────────────────────────────────── -->
+  <property name="lib.dir"        value="${basedir}/lib"/>
+  <property name="out.dir"        value="${basedir}/output"/>
+  <property name="catalog.file"   value="${basedir}/deploy/catalog/catalog.xml"/>
+  <property name="xsl.dir"        value="${basedir}/deploy/catalog/xsl"/>
+  <property name="css.dir"        value="${basedir}/deploy/catalog/css"/>
+  <property name="db.dir"         value="${basedir}/deploy/db"/>
+  <property name="inbox.dir"      value="${basedir}/deploy/inbox"/>
+  <property name="idgen.dir"      value="${basedir}/id-gen"/>
+  <property name="server.port"    value="7331"/>
+  <property name="webdav.port"    value="8080"/>
+  <property name="server.mode"    value="net"/>
+  <property name="css.theme"      value="${css.dir}/collibra.css"/>
+  <property name="feed.title"     value="id-gen Aggregated Feed"/>
+  <property name="base.url"       value="https://markupware.com/id-gen"/>
+  <property name="max.entries"    value="50"/>
+
+  <!-- Saxon-HE classpath -->
+  <path id="saxon.classpath">
+    <fileset dir="${lib.dir}" includes="saxon-he-*.jar" erroronmissingdir="false"/>
+    <fileset dir="${lib.dir}" includes="xmlresolver-*.jar" erroronmissingdir="false"/>
+  </path>
+
+  <!-- ── init ────────────────────────────────────────────────────────────── -->
+  <target name="init" description="Create required directories">
+    <mkdir dir="${out.dir}"/>
+    <mkdir dir="${lib.dir}"/>
+    <mkdir dir="${inbox.dir}/sparql"/>
+    <mkdir dir="${inbox.dir}/contract"/>
+    <mkdir dir="${inbox.dir}/conv"/>
+    <mkdir dir="${inbox.dir}/certs"/>
+    <mkdir dir="${inbox.dir}/.done"/>
+    <mkdir dir="${inbox.dir}/.fail"/>
+    <mkdir dir="${db.dir}/certs"/>
+    <echo>Directories created.</echo>
+    <echo>Drop Saxon-HE JAR into: ${lib.dir}/</echo>
+    <echo>Download: https://sourceforge.net/projects/saxon/files/Saxon-HE/</echo>
+  </target>
+
+  <!-- ── download Saxon + xmlresolver (if curl available) ────────────────── -->
+  <target name="get-saxon" description="Download Saxon-HE 12 + xmlresolver (requires curl)">
+    <exec executable="bash" failonerror="false">
+      <arg value="-c"/>
+      <arg value="
+        mkdir -p ${lib.dir} &amp;&amp;
+        SAXON_VER=12.5 &amp;&amp;
+        XR_VER=5.2.3 &amp;&amp;
+        [ -f ${lib.dir}/saxon-he-${SAXON_VER}.jar ] || \
+          curl -L -o ${lib.dir}/saxon-he-${SAXON_VER}.jar \
+          'https://repo1.maven.org/maven2/net/sf/saxon/Saxon-HE/${SAXON_VER}/Saxon-HE-${SAXON_VER}.jar' &amp;&amp;
+        [ -f ${lib.dir}/xmlresolver-${XR_VER}.jar ] || \
+          curl -L -o ${lib.dir}/xmlresolver-${XR_VER}.jar \
+          'https://repo1.maven.org/maven2/org/xmlresolver/xmlresolver/${XR_VER}/xmlresolver-${XR_VER}.jar'
+        echo 'Saxon + xmlresolver ready.'
+      "/>
+    </exec>
+  </target>
+
+  <!-- ── aggregate-atom ───────────────────────────────────────────────────── -->
+  <target name="aggregate-atom" depends="init"
+          description="Aggregate Atom feeds with XSLT 3.0 (Saxon-HE)">
+    <java classname="net.sf.saxon.Transform"
+          classpathref="saxon.classpath"
+          fork="true" failonerror="false">
+      <arg value="-xsl:${xsl.dir}/atom-aggregate.xsl"/>
+      <arg value="-s:${basedir}/deploy/catalog/feeds.xml"/>
+      <arg value="-o:${out.dir}/aggregate.atom"/>
+      <arg value="-catalog:${catalog.file}"/>
+      <arg value="theme=${css.theme}"/>
+      <arg value="base-url=${base.url}"/>
+      <arg value="feed-title=${feed.title}"/>
+      <arg value="max-entries=${max.entries}"/>
+      <arg value="output-html=true"/>
+      <!-- xmlresolver catalog integration (Norman Walsh) -->
+      <jvmarg value="-Dxmlresolver.catalog=${catalog.file}"/>
+      <jvmarg value="-Dxml.catalog.files=${catalog.file}"/>
+    </java>
+    <echo>Output: ${out.dir}/aggregate.atom + aggregate.html</echo>
+  </target>
+
+  <!-- ── transform (generic) ──────────────────────────────────────────────── -->
+  <target name="transform" description="Apply XSL to source (set src.xml and xsl.file)">
+    <property name="src.xml"  value="${basedir}/input.xml"/>
+    <property name="xsl.file" value="${xsl.dir}/identity.xsl"/>
+    <property name="out.xml"  value="${out.dir}/output.xml"/>
+    <java classname="net.sf.saxon.Transform"
+          classpathref="saxon.classpath"
+          fork="true" failonerror="false">
+      <arg value="-xsl:${xsl.file}"/>
+      <arg value="-s:${src.xml}"/>
+      <arg value="-o:${out.xml}"/>
+      <arg value="-catalog:${catalog.file}"/>
+      <jvmarg value="-Dxmlresolver.catalog=${catalog.file}"/>
+    </java>
+  </target>
+
+  <!-- ── db-init ──────────────────────────────────────────────────────────── -->
+  <target name="db-init" description="Initialise all three SQLite databases">
+    <exec executable="bash" failonerror="false">
+      <arg value="${db.dir}/db.sh"/>
+      <arg value="init"/>
+    </exec>
+  </target>
+
+  <!-- ── db-sync ──────────────────────────────────────────────────────────── -->
+  <target name="db-sync" depends="db-init"
+          description="Sync flat namespace files → databases">
+    <exec executable="bash" failonerror="false">
+      <arg value="${db.dir}/db.sh"/>
+      <arg value="sync"/>
+    </exec>
+  </target>
+
+  <!-- ── server-start ─────────────────────────────────────────────────────── -->
+  <target name="server-start" description="Start id-gen HTTP server (net mode)">
+    <exec executable="bash" failonerror="false">
+      <arg value="${idgen.dir}/server/server.sh"/>
+      <arg value="start"/>
+      <arg value="--port"/>  <arg value="${server.port}"/>
+      <arg value="--mode"/>  <arg value="${server.mode}"/>
+    </exec>
+  </target>
+
+  <!-- ── server-dmz ───────────────────────────────────────────────────────── -->
+  <target name="server-dmz" description="Start id-gen HTTP server (DMZ mode)">
+    <exec executable="bash" failonerror="false">
+      <arg value="${idgen.dir}/server/server.sh"/>
+      <arg value="start"/>
+      <arg value="--port"/>  <arg value="${server.port}"/>
+      <arg value="--mode"/>  <arg value="dmz"/>
+    </exec>
+  </target>
+
+  <!-- ── inbox-start ──────────────────────────────────────────────────────── -->
+  <target name="inbox-start" description="Start WebDAV inbox watcher">
+    <exec executable="bash" failonerror="false" spawn="true">
+      <arg value="${basedir}/deploy/webdav/inbox_watch.sh"/>
+      <arg value="start"/>
+      <env key="INBOX_DIR"    value="${inbox.dir}"/>
+      <env key="WEBDAV_PORT"  value="${webdav.port}"/>
+    </exec>
+    <echo>WebDAV inbox watching on port ${webdav.port} → ${inbox.dir}</echo>
+  </target>
+
+  <!-- ── full-deploy ──────────────────────────────────────────────────────── -->
+  <target name="full-deploy"
+          depends="init, db-init, db-sync, server-start, inbox-start"
+          description="Full deployment: init + databases + server + WebDAV inbox">
+    <echo>id-gen fully deployed.</echo>
+    <echo>  API server : http://localhost:${server.port}/</echo>
+    <echo>  WebDAV     : http://localhost:${webdav.port}/webdav/</echo>
+  </target>
+
+  <!-- ── clean ────────────────────────────────────────────────────────────── -->
+  <target name="clean" description="Remove generated output">
+    <delete dir="${out.dir}" quiet="true"/>
+    <echo>Output cleaned.</echo>
+  </target>
+
+  <!-- ── help ─────────────────────────────────────────────────────────────── -->
+  <target name="help" description="Show available targets">
+    <echo>
+id-gen Ant build — XSLT 3.0 / Atom / WebDAV / SQLite
+
+Targets:
+  init            Create directories
+  get-saxon       Download Saxon-HE 12 + xmlresolver (Norman Walsh)
+  aggregate-atom  Run XSLT 3.0 Atom aggregator (Saxon-HE)
+  transform       Generic Saxon XSLT transform (set src.xml, xsl.file, out.xml)
+  db-init         Initialise 3 SQLite databases (contracts, namespaces, catalog)
+  db-sync         Sync flat files → databases
+  server-start    Start id-gen HTTP server (net mode, port ${server.port})
+  server-dmz      Start id-gen HTTP server (DMZ mode)
+  inbox-start     Start WebDAV inbox watcher (port ${webdav.port})
+  full-deploy     Full deployment stack
+  clean           Remove generated output
+
+Sites: guiti.be | khakbaz.com | markupware.com | lutinio.io
+
+Usage:
+  ant init
+  ant get-saxon
+  ant aggregate-atom
+  ant full-deploy
+  ant -Dserver.mode=dmz server-dmz
+    </echo>
+  </target>
+
+</project>
