@@ -1,0 +1,5 @@
+[2026-02-27T00:45:21Z] [DB] Initialising contracts.db
+[2026-02-27T00:48:14Z] [DB] Initialising all databases via python3 sqlite3
+[2026-02-27T00:48:14Z] [DB] All three databases initialised
+[2026-02-27T00:48:22Z] [DB] Syncing flat files → DB
+[2026-02-27T00:48:22Z] [DB] Sync complete
