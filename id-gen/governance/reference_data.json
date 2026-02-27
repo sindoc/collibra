@@ -1,0 +1,86 @@
+{
+  "$id": "c.governance.reference-data.v1",
+  "description": "Governance reference data for id-gen. Drives dropdown menus and validation.",
+  "namespaces": {
+    "c": {
+      "label": "Collibra (privileged)",
+      "description": "IDs sourced from or registered in Collibra. Always preferred over a.* and b.*.",
+      "prefix": "c.",
+      "priority": 1,
+      "source": "https://api-vlab.collibra.com"
+    },
+    "a": {
+      "label": "Reserved-A",
+      "description": "Reserved namespace A. Not currently assigned.",
+      "prefix": "a.",
+      "priority": 2
+    },
+    "b": {
+      "label": "Reserved-B",
+      "description": "Reserved namespace B. Not currently assigned.",
+      "prefix": "b.",
+      "priority": 3
+    }
+  },
+  "contract_kinds": [
+    { "value": "DataContract",       "label": "Data Contract",       "sbvr": "odrl:Agreement",       "dcat": "dcat:DataService" },
+    { "value": "UseCaseContract",    "label": "Use Case Contract",   "sbvr": "sbvr:BusinessRule",    "prov": "prov:Activity" },
+    { "value": "ServiceContract",    "label": "Service Contract",    "sbvr": "odrl:Policy",          "dcat": "dcat:DataService" },
+    { "value": "GovernanceContract", "label": "Governance Contract", "sbvr": "odrl:Agreement",       "owl":  "owl:NamedIndividual" }
+  ],
+  "contract_statuses": [
+    { "value": "DRAFT",            "label": "Draft",            "step_range": [0, 3], "color": "#1f6feb" },
+    { "value": "PENDING_APPROVAL", "label": "Pending Approval", "step_range": [4, 6], "color": "#d29922" },
+    { "value": "APPROVED",         "label": "Approved",         "step_range": [7, 7], "color": "#238636" },
+    { "value": "REJECTED",         "label": "Rejected",         "step_range": [],     "color": "#da3633" },
+    { "value": "ACTIVE",           "label": "Active",           "step_range": [],     "color": "#3fb950" },
+    { "value": "DEPRECATED",       "label": "Deprecated",       "step_range": [],     "color": "#8b949e" }
+  ],
+  "workflow_steps": [
+    { "step": 0, "key": "INIT",       "status": "DRAFT",            "label": "Contract created",                       "pct": 0   },
+    { "step": 1, "key": "EXTRACT",    "status": "DRAFT",            "label": "Collibra asset types enumerated",        "pct": 14  },
+    { "step": 2, "key": "CLASSIFY",   "status": "DRAFT",            "label": "Asset types → SBVR Concept Types",       "pct": 29  },
+    { "step": 3, "key": "RELATE",     "status": "DRAFT",            "label": "ORM binary fact types identified",       "pct": 43  },
+    { "step": 4, "key": "CONSTRAIN",  "status": "PENDING_APPROVAL", "label": "Uniqueness + mandatory constraints",     "pct": 57  },
+    { "step": 5, "key": "VERBALIZE",  "status": "PENDING_APPROVAL", "label": "SBVR business rules expressed",         "pct": 71  },
+    { "step": 6, "key": "ALIGN",      "status": "PENDING_APPROVAL", "label": "Vocabulary cross-references applied",   "pct": 86  },
+    { "step": 7, "key": "CONTRACT",   "status": "APPROVED",         "label": "Finalized, IDs tracked",                "pct": 100 }
+  ],
+  "asset_types": [
+    { "id": "00000000-0000-0000-0001-000000000001", "name": "Business Term",  "sbvr": "BusinessVocabularyTerm", "skos": "Concept" },
+    { "id": "00000000-0000-0000-0001-000000000002", "name": "Data Asset",     "sbvr": "ConceptType",           "dcat": "Dataset" },
+    { "id": "00000000-0000-0000-0001-000000000003", "name": "Policy",         "sbvr": "BusinessRule",          "odrl": "Policy"  },
+    { "id": "00000000-0000-0000-0001-000000000004", "name": "Use Case",       "sbvr": "BusinessRule",          "prov": "Activity"},
+    { "id": "00000000-0000-0000-0001-000000000005", "name": "Data Contract",  "sbvr": "Proposition",           "odrl": "Agreement"},
+    { "id": "00000000-0000-0000-0000-000000010001", "name": "Glossary",       "sbvr": "ConceptType",           "skos": "ConceptScheme" }
+  ],
+  "collibra_community": {
+    "id": "0193febe-98bd-78ba-9301-7199dcb1607a",
+    "url": "https://api-vlab.collibra.com/community/0193febe-98bd-78ba-9301-7199dcb1607a",
+    "base_url": "https://api-vlab.collibra.com"
+  },
+  "conflict_resolution": {
+    "strategies": ["OURS", "THEIRS", "COLLIBRA_WINS", "ASK", "MANUAL"],
+    "default": "COLLIBRA_WINS",
+    "id_priority": ["c.", "b.", "a.", "raw-uuid"],
+    "description": "c.* IDs always win merge conflicts. b.* next, then a.*, then raw UUIDs."
+  },
+  "server": {
+    "default_port": 7331,
+    "modes": ["net", "dmz"],
+    "dmz_allowed_paths": ["/health", "/api/id/gen", "/api/contracts/list", "/api/progress"],
+    "ssh_identity": {
+      "user": "sina@neille.mac.collibra.com",
+      "key_type": "ssh-rsa",
+      "key_comment": "sina@neille.mac.collibra.com",
+      "registered": true
+    }
+  },
+  "topic_project_mapping": {
+    "description": "Project names map to c.topic.* IDs. A topic is the internal model term for what users call a 'project'. Topics can map to Collibra cases (c.case.*).",
+    "examples": [
+      { "project": "PaymentStatusGlossary", "topic_id_pattern": "c.topic.<uuid>" },
+      { "project": "DataQualityPipeline",   "topic_id_pattern": "c.topic.<uuid>" }
+    ]
+  }
+}

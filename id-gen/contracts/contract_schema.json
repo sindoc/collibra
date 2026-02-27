@@ -1,0 +1,115 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "c.schema.data-contract.v1",
+  "title": "DataContract",
+  "description": "Collibra-governed data contract. c.* IDs are privileged (Collibra-sourced). a.* and b.* are reserved namespaces.",
+  "type": "object",
+  "required": ["id", "kind", "status", "topic", "created_at"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^c\\.contract\\.[0-9a-f-]{36}$",
+      "description": "Collibra-privileged contract ID (c.contract.<uuid>)"
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["DataContract", "ServiceContract", "UseCaseContract", "GovernanceContract"]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["DRAFT", "PENDING_APPROVAL", "APPROVED", "REJECTED", "ACTIVE", "DEPRECATED"],
+      "default": "DRAFT"
+    },
+    "workflow_step": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 7,
+      "description": "Current step in the 7-step ORM/SBVR mapping algorithm"
+    },
+    "workflow_progress": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Progress percentage for UI progress bar rendering"
+    },
+    "topic": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^c\\.topic\\.[0-9a-f-]{36}$",
+          "description": "Project=Topic; maps to c.topic.* (Collibra-privileged)"
+        },
+        "label": { "type": "string" },
+        "collibra_case_id": {
+          "type": "string",
+          "pattern": "^c\\.case\\.[0-9a-f-]{36}$"
+        },
+        "collibra_community_id": { "type": "string" }
+      }
+    },
+    "sparql_query": {
+      "type": "string",
+      "description": "Source SPARQL query that generated this contract"
+    },
+    "sbvr_rules": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "SBVR business rules verbalized from ORM fact types"
+    },
+    "orm_fact_types": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["subject", "verb", "object"],
+        "properties": {
+          "subject": { "type": "string" },
+          "verb":    { "type": "string" },
+          "object":  { "type": "string" },
+          "uniqueness": { "type": "boolean" },
+          "mandatory":  { "type": "boolean" }
+        }
+      }
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "normalized":   { "type": "object" },
+        "denormalized": { "type": "object" }
+      }
+    },
+    "git_tag": {
+      "type": "string",
+      "description": "Git tag that persists this ID: id-gen/c.contract.<uuid>"
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" },
+    "approved_by": { "type": "string" },
+    "ssh_identity": {
+      "type": "string",
+      "description": "SSH public key fingerprint of the initiating principal"
+    },
+    "a_ids": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^a\\." },
+      "description": "Reserved namespace A references"
+    },
+    "b_ids": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^b\\." },
+      "description": "Reserved namespace B references"
+    },
+    "vocab_alignment": {
+      "type": "object",
+      "properties": {
+        "skos":  { "type": "string" },
+        "dcat":  { "type": "string" },
+        "odrl":  { "type": "string" },
+        "prov":  { "type": "string" },
+        "owl":   { "type": "string" },
+        "sbvr":  { "type": "string" }
+      }
+    }
+  }
+}

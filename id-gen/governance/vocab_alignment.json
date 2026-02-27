@@ -1,0 +1,119 @@
+{
+  "$id": "c.governance.vocab-alignment.v1",
+  "description": "Vocabulary alignment table: Collibra asset types ↔ ORM ↔ SBVR ↔ SKOS/DCAT/ODRL/PROV/OWL",
+
+  "prefixes": {
+    "rdf":  "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "owl":  "http://www.w3.org/2002/07/owl#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "dcat": "http://www.w3.org/ns/dcat#",
+    "odrl": "http://www.w3.org/ns/odrl/2/",
+    "prov": "http://www.w3.org/ns/prov#",
+    "dc":   "http://purl.org/dc/terms/",
+    "sbvr": "https://www.omg.org/spec/SBVR/1.5/",
+    "orm":  "http://www.orm.net/ORM2/",
+    "bpmn": "http://www.omg.org/spec/BPMN/2.0/",
+    "c":    "https://api-vlab.collibra.com/ontology/"
+  },
+
+  "concept_type_alignment": [
+    {
+      "collibra":  "Business Term",
+      "orm":       "ObjectType",
+      "sbvr":      "BusinessVocabularyTerm",
+      "skos":      "skos:Concept",
+      "owl":       "owl:NamedIndividual",
+      "use":       "Preferred labels, alternative labels, definitions"
+    },
+    {
+      "collibra":  "Data Asset",
+      "orm":       "ObjectType",
+      "sbvr":      "ConceptType",
+      "dcat":      "dcat:Dataset",
+      "owl":       "owl:Class",
+      "use":       "Dataset descriptions, distributions, access URLs"
+    },
+    {
+      "collibra":  "Policy",
+      "orm":       "SubtypeConstraint",
+      "sbvr":      "BusinessRule",
+      "odrl":      "odrl:Policy",
+      "owl":       "owl:Class",
+      "use":       "Usage constraints, permissions, prohibitions, duties"
+    },
+    {
+      "collibra":  "Use Case",
+      "orm":       "DerivedFactType",
+      "sbvr":      "BusinessRule + OperativeRule",
+      "prov":      "prov:Activity",
+      "owl":       "owl:NamedIndividual",
+      "use":       "Approval process, trigger for contract generation"
+    },
+    {
+      "collibra":  "Data Contract",
+      "orm":       "ObjectType",
+      "sbvr":      "Proposition",
+      "odrl":      "odrl:Agreement",
+      "dcat":      "dcat:DataService",
+      "use":       "Formal data usage agreement between parties"
+    },
+    {
+      "collibra":  "Community",
+      "orm":       "ObjectType",
+      "sbvr":      "ConceptType",
+      "skos":      "skos:ConceptScheme",
+      "use":       "Organizational grouping of domains"
+    },
+    {
+      "collibra":  "Domain",
+      "orm":       "Subtype",
+      "sbvr":      "ConceptType",
+      "skos":      "skos:Collection",
+      "use":       "Thematic grouping of business terms"
+    },
+    {
+      "collibra":  "Attribute Type",
+      "orm":       "UnaryFactType",
+      "sbvr":      "IndividualConceptTerm",
+      "owl":       "owl:DatatypeProperty",
+      "use":       "Properties of assets (e.g. data type, format)"
+    },
+    {
+      "collibra":  "Relation Type",
+      "orm":       "BinaryFactType",
+      "sbvr":      "BinaryFactType",
+      "owl":       "owl:ObjectProperty",
+      "use":       "Relationships between assets"
+    }
+  ],
+
+  "topic_project_model": {
+    "description": "Internal model: 'project' = 'topic'. Topic maps to Collibra case.",
+    "mapping": {
+      "internal_term":    "project",
+      "model_term":       "topic",
+      "collibra_term":    "c (short for Collibra case)",
+      "id_prefix":        "c.topic.*",
+      "id_privilege":     "c.* IDs are privileged; a.* and b.* are reserved",
+      "sbvr_definition":  "A Topic is the internal label for what users call a Project. Each Topic must map to exactly one Collibra case.",
+      "orm_fact":         "Topic mapsTo CollibraCase [mandatory, unique]"
+    }
+  },
+
+  "orm_constraint_types": {
+    "uniqueness":  "Each combination of role values occurs at most once",
+    "mandatory":   "Each object must play the role at least once",
+    "ring":        "An object cannot stand in the relation to itself",
+    "subset":      "Every role player in one fact type is also a role player in another",
+    "equality":    "Two fact types have exactly the same role players",
+    "exclusion":   "No object plays both roles"
+  },
+
+  "sbvr_rule_types": {
+    "structural":   "It is necessary that / It is impossible that",
+    "operative":    "It is obligatory / permitted / forbidden",
+    "definitional": "A <term> is <definition>",
+    "derivation":   "The <property> of <concept> is derived from <expression>"
+  }
+}

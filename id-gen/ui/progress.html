@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>id-gen — Contract Workflow Progress</title>
+  <style>
+    :root {
+      --c-bg: #0d1117; --c-surface: #161b22; --c-border: #30363d;
+      --c-accent: #238636; --c-blue: #1f6feb; --c-text: #e6edf3;
+      --c-muted: #8b949e; --c-warn: #d29922; --c-danger: #da3633;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--c-bg); color: var(--c-text);
+           font-family: 'SF Mono', 'Fira Code', monospace; padding: 2rem; }
+    h1 { font-size: 1.4rem; margin-bottom: 0.4rem; }
+    .subtitle { color: var(--c-muted); font-size: 0.85rem; margin-bottom: 2rem; }
+    .card { background: var(--c-surface); border: 1px solid var(--c-border);
+            border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; }
+    .card-header { display: flex; justify-content: space-between;
+                   align-items: center; margin-bottom: 1rem; }
+    .badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 12px;
+             background: var(--c-border); color: var(--c-muted); }
+    .badge.approved { background: #0e4429; color: #3fb950; }
+    .badge.pending  { background: #341a00; color: #d29922; }
+    .badge.draft    { background: #1f2d3d; color: var(--c-blue); }
+
+    /* ── SVG Progress Bar ── */
+    .progress-wrap { margin: 0.75rem 0; }
+    .progress-label { display: flex; justify-content: space-between;
+                      font-size: 0.75rem; color: var(--c-muted); margin-bottom: 4px; }
+    svg.bar { width: 100%; height: 18px; }
+    .bar-track { fill: var(--c-border); rx: 9; }
+    .bar-fill  { rx: 9; transition: width 0.4s ease; }
+
+    /* ── Step pipeline ── */
+    .steps { display: flex; gap: 0; margin-top: 1rem; overflow-x: auto; }
+    .step { flex: 1; min-width: 80px; text-align: center; position: relative; }
+    .step::after {
+      content: ''; position: absolute; top: 14px; right: -1px;
+      width: 100%; height: 2px; background: var(--c-border); z-index: 0;
+    }
+    .step:last-child::after { display: none; }
+    .step-dot {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--c-border); border: 2px solid var(--c-border);
+      margin: 0 auto 6px; display: flex; align-items: center;
+      justify-content: center; font-size: 0.65rem; z-index: 1;
+      position: relative; transition: all 0.3s;
+    }
+    .step.done .step-dot   { background: var(--c-accent); border-color: #3fb950; color: #fff; }
+    .step.active .step-dot { background: var(--c-blue);   border-color: #58a6ff; color: #fff;
+                             box-shadow: 0 0 0 4px rgba(31,111,235,0.25); }
+    .step-name { font-size: 0.6rem; color: var(--c-muted); white-space: nowrap; }
+    .step.done   .step-name   { color: #3fb950; }
+    .step.active .step-name   { color: #58a6ff; }
+
+    /* ── MathML / LaTeX equation display ── */
+    .equation-box {
+      background: #0d1117; border: 1px solid var(--c-border);
+      border-radius: 6px; padding: 1rem; margin-top: 1rem;
+      font-size: 0.9rem;
+    }
+    .equation-box math { font-size: 1.2rem; }
+    .eq-label { font-size: 0.7rem; color: var(--c-muted); margin-bottom: 0.5rem; }
+
+    /* ── Log entries ── */
+    .log { font-size: 0.75rem; color: var(--c-muted); margin-top: 1rem;
+           max-height: 140px; overflow-y: auto;
+           background: #0d1117; border-radius: 4px; padding: 0.5rem; }
+    .log-entry { border-bottom: 1px solid var(--c-border); padding: 3px 0; }
+    .log-ts { color: #58a6ff; }
+
+    /* ── Namespace chips ── */
+    .ns-chips { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; }
+    .ns-chip { font-size: 0.7rem; padding: 3px 10px; border-radius: 12px; cursor: default; }
+    .ns-c { background: #0e4429; color: #3fb950; border: 1px solid #238636; }
+    .ns-a { background: #1f2d3d; color: #79c0ff; border: 1px solid #1f6feb; }
+    .ns-b { background: #2d1f3d; color: #d2a8ff; border: 1px solid #8957e5; }
+
+    /* ── Controls ── */
+    .controls { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem; }
+    button {
+      font-family: inherit; font-size: 0.78rem; padding: 6px 14px;
+      border-radius: 6px; cursor: pointer; border: 1px solid var(--c-border);
+      background: var(--c-surface); color: var(--c-text); transition: all 0.15s;
+    }
+    button:hover { border-color: #58a6ff; color: #58a6ff; }
+    button.primary { background: #238636; border-color: #238636; color: #fff; }
+    button.primary:hover { background: #2ea043; }
+    input, select {
+      font-family: inherit; font-size: 0.78rem; padding: 6px 10px;
+      border-radius: 6px; border: 1px solid var(--c-border);
+      background: var(--c-surface); color: var(--c-text); min-width: 200px;
+    }
+    select option { background: var(--c-surface); }
+  </style>
+  <!-- MathJax for LaTeX rendering -->
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['$','$'],['\\(','\\)']], displayMath: [['$$','$$']] },
+      options: { skipHtmlTags: ['script','noscript','style','textarea','pre'] }
+    };
+  </script>
+</head>
+<body>
+
+<h1>id-gen — Contract Workflow Dashboard</h1>
+<p class="subtitle">Collibra · ORM · SBVR · 7-step pipeline · c.* privileged namespace</p>
+
+<!-- ── Namespace Registry ── -->
+<div class="card">
+  <div class="card-header">
+    <strong>Namespace Registry</strong>
+    <span class="badge">ID resolution</span>
+  </div>
+  <div class="ns-chips">
+    <span class="ns-chip ns-c" title="Collibra-privileged IDs">c.* — Collibra (privileged)</span>
+    <span class="ns-chip ns-a" title="Reserved namespace A">a.* — reserved-A</span>
+    <span class="ns-chip ns-b" title="Reserved namespace B">b.* — reserved-B</span>
+  </div>
+  <p style="font-size:0.75rem;color:var(--c-muted);margin-top:0.75rem">
+    Project = Topic → <code>c.topic.*</code> &nbsp;|&nbsp;
+    Topic maps to Collibra case → <code>c.case.*</code>
+  </p>
+</div>
+
+<!-- ── Contract Progress Card (dynamic example) ── -->
+<div class="card" id="contract-card">
+  <div class="card-header">
+    <div>
+      <strong id="contract-id">c.contract.&lt;uuid&gt;</strong><br/>
+      <span style="font-size:0.75rem;color:var(--c-muted)" id="contract-topic">Topic: —</span>
+    </div>
+    <span class="badge draft" id="status-badge">DRAFT</span>
+  </div>
+
+  <!-- SVG Progress Bar -->
+  <div class="progress-wrap">
+    <div class="progress-label">
+      <span id="step-label">Step 0 / 7 — INIT</span>
+      <span id="pct-label">0%</span>
+    </div>
+    <svg class="bar" viewBox="0 0 400 18">
+      <rect class="bar-track" x="0" y="0" width="400" height="18" rx="9"/>
+      <rect class="bar-fill" id="bar-fill" x="0" y="0" width="0" height="18" rx="9"
+            fill="#238636"/>
+    </svg>
+  </div>
+
+  <!-- Step pipeline -->
+  <div class="steps" id="steps-pipeline">
+    <!-- populated by JS -->
+  </div>
+
+  <!-- Equation display -->
+  <div class="equation-box">
+    <div class="eq-label">Workflow progress equation (step → %)</div>
+    <!-- MathML inline -->
+    <math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+      <mrow>
+        <mi>progress</mi>
+        <mo>=</mo>
+        <mfrac>
+          <mi>step</mi>
+          <mn>7</mn>
+        </mfrac>
+        <mo>&#x00D7;</mo>
+        <mn>100</mn>
+        <mo>=</mo>
+        <mfrac><mrow><mi>step</mi><mo>&#x22C5;</mo><mn>100</mn></mrow><mn>7</mn></mfrac>
+        <mo>%</mo>
+      </mrow>
+    </math>
+    <!-- LaTeX fallback (rendered by MathJax) -->
+    <div style="margin-top:0.5rem;font-size:0.8rem;color:var(--c-muted)">
+      $\text{progress} = \frac{\text{step} \times 100}{7}\%$
+      &nbsp;&nbsp;|&nbsp;&nbsp;
+      $\text{step} \in \{0,1,2,3,4,5,6,7\}$
+    </div>
+  </div>
+
+  <!-- Log -->
+  <div class="log" id="log-panel">
+    <div class="log-entry"><span class="log-ts">[init]</span> Dashboard loaded</div>
+  </div>
+</div>
+
+<!-- ── Controls ── -->
+<div class="card">
+  <div class="card-header"><strong>Controls</strong></div>
+  <div class="controls">
+    <select id="gov-dropdown">
+      <option value="">— Governance reference —</option>
+      <option value="DataContract">DataContract</option>
+      <option value="UseCaseContract">UseCaseContract</option>
+      <option value="ServiceContract">ServiceContract</option>
+      <option value="GovernanceContract">GovernanceContract</option>
+    </select>
+    <select id="ns-dropdown">
+      <option value="c">c.* — Collibra (privileged)</option>
+      <option value="a">a.* — reserved-A</option>
+      <option value="b">b.* — reserved-B</option>
+    </select>
+    <input id="topic-input" type="text" placeholder="Project/Topic label…"/>
+    <button class="primary" onclick="generateId()">Generate c.contract.* ID</button>
+    <button onclick="advanceStep()">Advance Step →</button>
+    <button onclick="resetDemo()">Reset</button>
+  </div>
+  <div style="margin-top:1rem">
+    <div class="eq-label">Equation solver (uses server /api/eq if available)</div>
+    <div class="controls">
+      <input id="eq-input" type="text" placeholder="e.g.  x**2 + 3*x + 2" style="min-width:280px"/>
+      <select id="eq-mode">
+        <option value="solve">solve</option>
+        <option value="latex">latex</option>
+        <option value="plot">plot</option>
+      </select>
+      <button onclick="solveEq()">Evaluate</button>
+    </div>
+    <pre id="eq-result" style="margin-top:0.5rem;font-size:0.75rem;color:#3fb950;min-height:1.5rem"></pre>
+  </div>
+</div>
+
+<script>
+// ── state ─────────────────────────────────────────────────────────────────────
+const STEPS = ['INIT','EXTRACT','CLASSIFY','RELATE','CONSTRAIN','VERBALIZE','ALIGN','CONTRACT'];
+const STATUS_MAP = {0:'DRAFT',1:'DRAFT',2:'DRAFT',3:'DRAFT',4:'PENDING_APPROVAL',5:'PENDING_APPROVAL',6:'PENDING_APPROVAL',7:'APPROVED'};
+const SERVER = 'http://localhost:7331';
+
+let state = {
+  id: null, step: 0, topic: '', kind: 'DataContract', ns: 'c', logs: []
+};
+
+// ── init pipeline UI ──────────────────────────────────────────────────────────
+function renderPipeline() {
+  const el = document.getElementById('steps-pipeline');
+  el.innerHTML = STEPS.map((s, i) => {
+    const cls = i < state.step ? 'done' : i === state.step ? 'active' : '';
+    return `<div class="step ${cls}">
+      <div class="step-dot">${i < state.step ? '✓' : i}</div>
+      <div class="step-name">${s}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderBar() {
+  const pct = Math.round(state.step * 100 / 7);
+  const fill = document.getElementById('bar-fill');
+  fill.setAttribute('width', (400 * pct / 100).toFixed(1));
+  const color = pct < 40 ? '#1f6feb' : pct < 80 ? '#d29922' : '#238636';
+  fill.setAttribute('fill', color);
+  document.getElementById('step-label').textContent =
+    `Step ${state.step} / 7 — ${STEPS[state.step]}`;
+  document.getElementById('pct-label').textContent = `${pct}%`;
+  document.getElementById('contract-id').textContent = state.id || 'c.contract.<uuid>';
+  document.getElementById('contract-topic').textContent = `Topic: ${state.topic || '—'}`;
+  const badge = document.getElementById('status-badge');
+  badge.textContent = STATUS_MAP[state.step];
+  badge.className = 'badge ' + (state.step === 7 ? 'approved' : state.step >= 4 ? 'pending' : 'draft');
+}
+
+function addLog(msg) {
+  const ts = new Date().toISOString().replace('T',' ').slice(0,19);
+  state.logs.unshift({ts, msg});
+  const panel = document.getElementById('log-panel');
+  panel.innerHTML = state.logs.slice(0,30).map(e =>
+    `<div class="log-entry"><span class="log-ts">[${e.ts}]</span> ${e.msg}</div>`
+  ).join('');
+}
+
+function render() { renderPipeline(); renderBar(); }
+
+// ── generate ID ───────────────────────────────────────────────────────────────
+async function generateId() {
+  const topic = document.getElementById('topic-input').value || 'UnnamedProject';
+  const ns    = document.getElementById('ns-dropdown').value || 'c';
+  const kind  = document.getElementById('gov-dropdown').value || 'DataContract';
+
+  state.topic = topic;
+  state.ns    = ns;
+  state.step  = 0;
+
+  // Try server first; fall back to client-side UUID
+  try {
+    const r = await fetch(`${SERVER}/api/id/gen`, {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({topic, kind, ns})});
+    if (r.ok) {
+      const d = await r.json();
+      state.id = d.id;
+      addLog(`Generated (server): ${state.id}`);
+      render(); return;
+    }
+  } catch(_) {}
+
+  // Client-side fallback UUID
+  const uid = crypto.randomUUID ? crypto.randomUUID() :
+    'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16); });
+  state.id = `${ns}.contract.${uid}`;
+  addLog(`Generated (client): ${state.id}`);
+  render();
+}
+
+// ── advance step ──────────────────────────────────────────────────────────────
+function advanceStep() {
+  if (!state.id) { addLog('Generate an ID first'); return; }
+  if (state.step >= 7) { addLog('Pipeline complete'); return; }
+  state.step++;
+  addLog(`Step ${state.step}/7 — ${STEPS[state.step]}`);
+  render();
+  if (typeof MathJax !== 'undefined') MathJax.typeset?.();
+}
+
+// ── equation solver ───────────────────────────────────────────────────────────
+async function solveEq() {
+  const expr = document.getElementById('eq-input').value;
+  const mode = document.getElementById('eq-mode').value;
+  const out  = document.getElementById('eq-result');
+  if (!expr) { out.textContent = 'Enter an expression'; return; }
+
+  // Try server
+  try {
+    const r = await fetch(`${SERVER}/api/eq`, {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({expr, mode})});
+    if (r.ok) { const d = await r.json(); out.textContent = JSON.stringify(d); return; }
+  } catch(_) {}
+
+  // Client fallback
+  try {
+    if (mode === 'solve') {
+      // eslint-disable-next-line no-new-func
+      const result = Function('"use strict"; let x=0,math=Math; return (' + expr.replace(/\*\*/g,'^') + ')')();
+      out.textContent = `Result: ${result}`;
+      addLog(`eq(${expr}) = ${result}`);
+    } else if (mode === 'latex') {
+      out.textContent = expr; // raw fallback
+      document.getElementById('eq-result').innerHTML = `\\(${expr}\\)`;
+      if (typeof MathJax !== 'undefined') MathJax.typeset?.([document.getElementById('eq-result')]);
+    } else {
+      out.textContent = '(plot: use server mode)';
+    }
+  } catch(e) { out.textContent = `Error: ${e.message}`; }
+}
+
+// ── reset ─────────────────────────────────────────────────────────────────────
+function resetDemo() {
+  state = {id: null, step: 0, topic: '', kind: 'DataContract', ns: 'c', logs: []};
+  document.getElementById('log-panel').innerHTML =
+    '<div class="log-entry"><span class="log-ts">[reset]</span> State cleared</div>';
+  render();
+}
+
+// ── init ──────────────────────────────────────────────────────────────────────
+render();
+addLog('id-gen dashboard ready');
+</script>
+
+<!-- MathJax CDN (optional, for LaTeX rendering) -->
+<script id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+</script>
+
+</body>
+</html>

@@ -1,0 +1,84 @@
+{
+  "$id": "c.schema.denormalized.v1",
+  "description": "Denormalized (document) schema — a single contract document embedding all related data. Used for API responses, Logseq pages, and export.",
+
+  "DataContractDocument": {
+    "id":              { "type": "string", "example": "c.contract.550e8400-e29b-41d4-a716-446655440000" },
+    "kind":            { "type": "string", "example": "DataContract" },
+    "status":          { "type": "string", "example": "PENDING_APPROVAL" },
+    "workflow_step":   { "type": "integer", "example": 4 },
+    "workflow_progress": { "type": "number", "example": 57 },
+    "git_tag":         { "type": "string", "example": "id-gen/c.contract.550e8400-..." },
+    "ssh_identity":    { "type": "string", "example": "sina@neille.mac.collibra.com" },
+
+    "topic": {
+      "id":                 { "type": "string", "example": "c.topic.123e4567-..." },
+      "label":              { "type": "string", "example": "PaymentStatusGlossary" },
+      "collibra_case_id":   { "type": "string", "example": "c.case.abc12345-..." },
+      "collibra_community_id": { "type": "string", "example": "0193febe-98bd-78ba-9301-7199dcb1607a" }
+    },
+
+    "sparql_query": {
+      "type": "string",
+      "example": "SELECT ?contract ?id WHERE { ?contract rdf:type c:DataContract ; c:id ?id . }"
+    },
+
+    "orm_fact_types": [
+      { "subject": "DataContract", "verb": "governs",   "object": "DataAsset",    "mandatory": true,  "uniqueness": false },
+      { "subject": "Topic",        "verb": "mapsTo",    "object": "CollibraCase", "mandatory": true,  "uniqueness": true  },
+      { "subject": "UseCase",      "verb": "generates", "object": "DataContract", "mandatory": false, "uniqueness": true  }
+    ],
+
+    "sbvr_rules": [
+      "It is necessary that each DataContract governs exactly one DataAsset.",
+      "It is necessary that each Topic is mapped to exactly one CollibraCase.",
+      "A DataContract must be in DRAFT status before it can be submitted for approval."
+    ],
+
+    "vocab_alignment": {
+      "SKOS":  "http://www.w3.org/2004/02/skos/core#",
+      "DCAT":  "http://www.w3.org/ns/dcat#",
+      "ODRL":  "http://www.w3.org/ns/odrl/2/",
+      "PROV":  "http://www.w3.org/ns/prov#",
+      "OWL":   "http://www.w3.org/2002/07/owl#",
+      "SBVR":  "https://www.omg.org/spec/SBVR/1.5/",
+      "ORM2":  "http://www.orm.net/ORM2/",
+      "BPMN2": "http://www.omg.org/spec/BPMN/2.0/"
+    },
+
+    "schema": {
+      "normalized_ref":   "c.schema.normalized.v1",
+      "denormalized_ref": "c.schema.denormalized.v1",
+      "notes": "Normalized form uses foreign-key relations between Contract, Topic, OrmFactType, SbvrRule, VocabAlignment, WorkflowLog. Denormalized form embeds all sub-entities for API and export."
+    },
+
+    "namespace_refs": {
+      "c_ids": ["c.contract.*", "c.topic.*", "c.case.*", "c.fact.*", "c.rule.*"],
+      "a_ids": [],
+      "b_ids": [],
+      "priority": "c.* > b.* > a.* > raw-uuid"
+    },
+
+    "workflow_log": [
+      {
+        "step": 0, "key": "INIT",
+        "timestamp": "2026-02-26T20:42:00Z",
+        "message": "Contract created"
+      },
+      {
+        "step": 1, "key": "EXTRACT",
+        "timestamp": "2026-02-26T20:42:01Z",
+        "message": "Collibra asset types enumerated"
+      }
+    ],
+
+    "collibra": {
+      "base_url":     "https://api-vlab.collibra.com",
+      "community_id": "0193febe-98bd-78ba-9301-7199dcb1607a",
+      "domain_type":  "00000000-0000-0000-0000-000000010001"
+    },
+
+    "created_at": "2026-02-26T20:42:00Z",
+    "updated_at": "2026-02-26T20:43:00Z"
+  }
+}

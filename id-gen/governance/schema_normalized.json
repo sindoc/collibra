@@ -1,0 +1,86 @@
+{
+  "$id": "c.schema.normalized.v1",
+  "description": "Normalized schema (3NF) for the id-gen contract system. Each entity has its own table/collection; IDs use c.* namespace.",
+
+  "entities": {
+    "Contract": {
+      "id":             { "type": "string", "pattern": "^c\\.contract\\.[0-9a-f-]{36}$", "pk": true },
+      "kind":           { "type": "string", "fk": "ContractKind.value" },
+      "status":         { "type": "string", "fk": "ContractStatus.value" },
+      "workflow_step":  { "type": "integer", "min": 0, "max": 7 },
+      "git_tag":        { "type": "string" },
+      "sparql_query":   { "type": "string" },
+      "ssh_identity":   { "type": "string" },
+      "created_at":     { "type": "string", "format": "date-time" },
+      "updated_at":     { "type": "string", "format": "date-time" }
+    },
+    "Topic": {
+      "id":                 { "type": "string", "pattern": "^c\\.topic\\.[0-9a-f-]{36}$", "pk": true },
+      "label":              { "type": "string" },
+      "collibra_case_id":   { "type": "string", "pattern": "^c\\.case\\.[0-9a-f-]{36}$", "nullable": true },
+      "collibra_community": { "type": "string" }
+    },
+    "ContractTopic": {
+      "contract_id": { "type": "string", "fk": "Contract.id" },
+      "topic_id":    { "type": "string", "fk": "Topic.id" },
+      "pk": ["contract_id", "topic_id"]
+    },
+    "OrmFactType": {
+      "id":          { "type": "string", "pattern": "^c\\.fact\\.[0-9a-f-]{36}$", "pk": true },
+      "contract_id": { "type": "string", "fk": "Contract.id" },
+      "subject":     { "type": "string" },
+      "verb":        { "type": "string" },
+      "object":      { "type": "string" },
+      "mandatory":   { "type": "boolean" },
+      "uniqueness":  { "type": "boolean" }
+    },
+    "SbvrRule": {
+      "id":          { "type": "string", "pattern": "^c\\.rule\\.[0-9a-f-]{36}$", "pk": true },
+      "contract_id": { "type": "string", "fk": "Contract.id" },
+      "rule_text":   { "type": "string" },
+      "rule_type":   { "type": "string", "enum": ["structural","operative","definitional","derivation"] }
+    },
+    "VocabAlignment": {
+      "contract_id": { "type": "string", "fk": "Contract.id" },
+      "vocab":       { "type": "string", "enum": ["SKOS","DCAT","ODRL","PROV","OWL","SBVR","ORM2","BPMN2"] },
+      "uri":         { "type": "string" },
+      "pk": ["contract_id", "vocab"]
+    },
+    "NamespaceRegistry": {
+      "id":         { "type": "string", "pk": true },
+      "ns":         { "type": "string", "enum": ["c","a","b"] },
+      "kind":       { "type": "string" },
+      "label":      { "type": "string", "nullable": true },
+      "created_at": { "type": "string", "format": "date-time" },
+      "source":     { "type": "string", "enum": ["generated","collibra-import"] }
+    },
+    "ContractKind": {
+      "value": { "type": "string", "pk": true },
+      "label": { "type": "string" },
+      "sbvr":  { "type": "string" }
+    },
+    "ContractStatus": {
+      "value":      { "type": "string", "pk": true },
+      "label":      { "type": "string" },
+      "step_min":   { "type": "integer" },
+      "step_max":   { "type": "integer" }
+    },
+    "WorkflowLog": {
+      "id":          { "type": "string", "pk": true },
+      "contract_id": { "type": "string", "fk": "Contract.id" },
+      "step":        { "type": "integer" },
+      "step_key":    { "type": "string" },
+      "timestamp":   { "type": "string", "format": "date-time" },
+      "message":     { "type": "string" }
+    }
+  },
+
+  "relationships": [
+    { "from": "Contract",       "to": "ContractTopic",   "via": "Contract.id = ContractTopic.contract_id", "cardinality": "1:N" },
+    { "from": "ContractTopic",  "to": "Topic",           "via": "ContractTopic.topic_id = Topic.id",       "cardinality": "N:1" },
+    { "from": "Contract",       "to": "OrmFactType",     "via": "Contract.id = OrmFactType.contract_id",   "cardinality": "1:N" },
+    { "from": "Contract",       "to": "SbvrRule",        "via": "Contract.id = SbvrRule.contract_id",      "cardinality": "1:N" },
+    { "from": "Contract",       "to": "VocabAlignment",  "via": "Contract.id = VocabAlignment.contract_id","cardinality": "1:N" },
+    { "from": "Contract",       "to": "WorkflowLog",     "via": "Contract.id = WorkflowLog.contract_id",   "cardinality": "1:N" }
+  ]
+}

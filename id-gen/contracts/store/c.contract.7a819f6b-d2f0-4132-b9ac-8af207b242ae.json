@@ -1,0 +1,33 @@
+{
+  "id": "c.contract.7a819f6b-d2f0-4132-b9ac-8af207b242ae",
+  "kind": "DataContract",
+  "status": "DRAFT",
+  "workflow_step": 3,
+  "workflow_progress": 42,
+  "topic": {
+    "id": "c.topic.b42cbde8-b872-450b-b4d3-71a5107c1545",
+    "label": "PaymentStatusGlossary",
+    "collibra_community_id": "0193febe-98bd-78ba-9301-7199dcb1607a"
+  },
+  "sparql_query": "SELECT ?c WHERE { ?c rdf:type c:DataContract }\n",
+  "sbvr_rules": [],
+  "orm_fact_types": [],
+  "schema": {
+    "normalized": {},
+    "denormalized": {}
+  },
+  "git_tag": "id-gen/c.contract.7a819f6b-d2f0-4132-b9ac-8af207b242ae",
+  "created_at": "2026-02-26T21:03:40Z",
+  "updated_at": "2026-02-26T21:03:41Z",
+  "ssh_identity": "sina@neille.mac.collibra.com",
+  "a_ids": [],
+  "b_ids": [],
+  "vocab_alignment": {
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "dcat": "http://www.w3.org/ns/dcat#",
+    "odrl": "http://www.w3.org/ns/odrl/2/",
+    "prov": "http://www.w3.org/ns/prov#",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "sbvr": "https://www.omg.org/spec/SBVR/1.5/"
+  }
+}
