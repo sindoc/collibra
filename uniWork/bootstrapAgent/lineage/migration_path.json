@@ -1,0 +1,87 @@
+{
+  "migrationPath": {
+    "id":          "mp-investment-edge-cap-v1",
+    "label":       "Investment Edge Cap Migration Path",
+    "description": "Approved lineage path for migrating investment data across network routing layers (IP → UDP signal → TCP handshake validation) through each maturity gate.",
+    "approved":    true,
+    "approvedBy":  "data-governance-board",
+    "version":     "1.0.0",
+
+    "networkRouting": {
+      "layers": [
+        {
+          "layer":       "IP",
+          "role":        "Packet addressing and routing across nodes",
+          "protocol":    "IPv4/IPv6",
+          "signalType":  "routing"
+        },
+        {
+          "layer":       "UDP",
+          "role":        "Low-latency signal broadcast for connection readiness",
+          "protocol":    "UDP/17",
+          "signalType":  "handshake-probe"
+        },
+        {
+          "layer":       "TCP/TLS",
+          "role":        "Reliable ordered data transfer with session validation",
+          "protocol":    "TCP/443 TLS 1.3",
+          "signalType":  "handshake-confirm"
+        }
+      ],
+      "handshakeValidation": {
+        "steps": [
+          "UDP probe to target host:port",
+          "TCP SYN → SYN-ACK → ACK (3-way handshake)",
+          "TLS ClientHello → ServerHello → Finished",
+          "HTTP CSRF + session token exchange",
+          "Application-level ACK (2xx/3xx/4xx response)"
+        ],
+        "logOnEachStep": true,
+        "failFast":      true
+      }
+    },
+
+    "stages": [
+      {
+        "stage":        1,
+        "name":         "Source Identification",
+        "from":         "raw-investment-data",
+        "to":           "collibra-staging-domain",
+        "maturityGate": "L1_Initial",
+        "controls":     ["data-classification", "pii-scan"]
+      },
+      {
+        "stage":        2,
+        "name":         "Lineage Mapping",
+        "from":         "collibra-staging-domain",
+        "to":           "collibra-glossary-domain",
+        "maturityGate": "L2_Developing",
+        "controls":     ["lineage-link", "ownership-assignment"]
+      },
+      {
+        "stage":        3,
+        "name":         "Governance Enforcement",
+        "from":         "collibra-glossary-domain",
+        "to":           "collibra-governed-domain",
+        "maturityGate": "L3_Defined",
+        "controls":     ["policy-check", "data-quality-rule"]
+      },
+      {
+        "stage":        4,
+        "name":         "Metric Validation",
+        "from":         "collibra-governed-domain",
+        "to":           "collibra-certified-domain",
+        "maturityGate": "L4_Managed",
+        "controls":     ["kpi-check", "variance-gate"]
+      },
+      {
+        "stage":        5,
+        "name":         "Optimised Publish",
+        "from":         "collibra-certified-domain",
+        "to":           "downstream-consumers",
+        "maturityGate": "L5_Optimizing",
+        "controls":     ["regression-check", "auto-snap"]
+      }
+    ]
+  }
+}

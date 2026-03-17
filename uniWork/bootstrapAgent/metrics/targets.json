@@ -1,0 +1,47 @@
+{
+  "targets": {
+    "id":          "targets-investment-edge-cap-v1",
+    "version":     "1.0.0",
+    "description": "Target KPIs and commitment thresholds for the edge cap investment maturity programme.",
+
+    "connectivity": {
+      "handshakeSuccessRate":   1.0,
+      "avgHandshakeLatencyMs":  500,
+      "endpointReachable":      true
+    },
+
+    "lineage": {
+      "lineageCompleteness":    0.95,
+      "ownershipCoverage":      1.0,
+      "note": "All assets must have lineage and an assigned owner before L3 gate"
+    },
+
+    "maturity": {
+      "targetLevel":            "L4_Managed",
+      "certificationRate":      0.9,
+      "timelineWeeks":          12
+    },
+
+    "financialTermCoverage": {
+      "coverageRate":           1.0,
+      "note": "All financial terms (Paid in Full, Partial Payment, Unpaid) must be in Collibra glossary"
+    },
+
+    "edgeCap": {
+      "maxUtilizationRate":     0.8,
+      "note": "Keep concurrent migrations below 80% of the edge cap limit"
+    },
+
+    "backSnap": {
+      "snapshotBeforeEachStage": true,
+      "retentionDays":           90,
+      "rpoMinutes":              60,
+      "note": "Recovery Point Objective: max 60 min of data loss on rollback"
+    },
+
+    "variance": {
+      "maxAllowedVarianceFromBaseline": 0.1,
+      "note": "Gate CI-005: block stage-4 if any KPI drifts > 10% from baseline"
+    }
+  }
+}

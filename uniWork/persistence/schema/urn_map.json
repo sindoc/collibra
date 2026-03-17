@@ -1,0 +1,53 @@
+{
+  "_comment": "Singine URN namespace map — shortest-path prefix resolution",
+  "version": "003",
+  "encoding": "UTF-8",
+
+  "prefixes": {
+    "singine":  "urn:singine:",
+    "cat":      "urn:singine:cat:",
+    "lin":      "urn:singine:lin:",
+    "env":      "urn:singine:env:",
+    "entity":   "urn:singine:entity:",
+    "driver":   "urn:singine:driver:",
+    "schema":   "urn:singine:schema:",
+    "foaf":     "http://xmlns.com/foaf/0.1/",
+    "doap":     "http://usefulinc.com/ns/doap#",
+    "dc":       "http://purl.org/dc/elements/1.1/",
+    "skos":     "http://www.w3.org/2004/02/skos/core#",
+    "rss":      "http://purl.org/rss/1.0/",
+    "ldap":     "ldap://dc=singine,dc=io/",
+    "lutino":   "https://lutino.io/singine/"
+  },
+
+  "entities": {
+    "urn:singine:project:smtpAgent":   "uniWork/smtpAgent",
+    "urn:singine:project:persistence": "uniWork/persistence",
+    "urn:singine:project:bootstrap":   "uniWork/bootstrapAgent",
+    "urn:singine:driver:sqlite":        "sqlite3",
+    "urn:singine:driver:mariadb":       "mysql-connector-python",
+    "urn:singine:driver:hive":          "pyhive",
+    "urn:singine:cat:main":             "categories/main",
+    "urn:singine:cat:primary":          "categories/primary",
+    "urn:singine:cat:secondary":        "categories/secondary",
+    "urn:singine:cat:n_linear":         "categories/n_linear",
+    "urn:singine:cat:relational":       "categories/relational",
+    "urn:singine:cat:boolean":          "categories/boolean"
+  },
+
+  "migration_path": {
+    "raw":     { "urn": "urn:singine:env:raw",     "order": 0 },
+    "base":    { "urn": "urn:singine:env:base",    "order": 1 },
+    "staging": { "urn": "urn:singine:env:staging", "order": 2 },
+    "master":  { "urn": "urn:singine:env:master",  "order": 3 },
+    "prod":    { "urn": "urn:singine:env:prod",    "order": 4 }
+  },
+
+  "protocols": {
+    "tcp":   { "port": 8025, "layer": "c-tcp" },
+    "http":  { "port": 8080, "layer": "python-web" },
+    "grpc":  { "port": 50051, "layer": "rust-persistence" },
+    "smtp":  { "port": 587,  "layer": "clojure-smtp" },
+    "ldap":  { "port": 389,  "layer": "python-ldap" }
+  }
+}

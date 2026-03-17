@@ -1,0 +1,290 @@
+# ────────────────────────────────────────────────────────────────────────────
+# Singine — Chain of Command Pipeline
+# Most-urgent mandate: data persistence, lineage, schema migration, analysis
+#
+# Phases (each needs the prior):
+#   1. build       — C binary, Rust engine, Python env
+#   2. migrate     — SQL schema raw → base (SQLite in CI, MariaDB in prod)
+#   3. analyze     — commit lineage base → master, FOAF/DOAP/RSS generation
+#   4. rust-path   — shortest-path on migration graph via Rust quicksort engine
+#   5. clojure-cat — multi-dimensional categories + similarity scoring (JVM)
+#   6. report      — Logseq SQLite knowledge graph, upload artifact
+# ────────────────────────────────────────────────────────────────────────────
+
+name: Singine Chain of Command
+
+on:
+  push:
+    branches:
+      - 'claude/**'
+      - main
+      - master
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      target_env:
+        description: 'Target environment (dev/staging/prod)'
+        required: true
+        default: dev
+        type: choice
+        options: [dev, staging, prod]
+
+env:
+  SQLITE_DB:      singine.db
+  SCHEMA_VERSION: "003"
+  RUST_DIR:       uniWork/persistence/rust
+  PYTHON_DIR:     uniWork/persistence/python
+  SCHEMA_DIR:     uniWork/persistence/schema
+  LOGSEQ_DIR:     uniWork/persistence/logseq
+  CLJ_DIR:        uniWork/persistence/clojure
+  SMTPC_DIR:      uniWork/smtpAgent/c
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # ── Phase 1: Build all layers ──────────────────────────────────────────────
+  build:
+    name: "Phase 1 · Build (C + Rust + Python)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # full history for lineage
+
+      # C TCP acceptor
+      - name: Build C TCP acceptor
+        run: make -C $SMTPC_DIR all
+
+      # Rust engine
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ${{ env.RUST_DIR }}
+      - name: Clippy lint Rust
+        run: cargo clippy --all-targets --all-features -- -D warnings
+        working-directory: ${{ env.RUST_DIR }}
+      - name: Build Rust persistence engine (release)
+        run: cargo build --release
+        working-directory: ${{ env.RUST_DIR }}
+
+      # Python env
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install Python deps
+        run: pip install -q flask requests
+
+      # Upload build artifacts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: c-binary
+          path: ${{ env.SMTPC_DIR }}/bin/accept_tcp
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rust-engine
+          path: ${{ env.RUST_DIR }}/target/release/persistence
+
+  # ── Phase 2: Schema migration raw → base ──────────────────────────────────
+  migrate:
+    name: "Phase 2 · Schema migration (raw → base)"
+    needs: build
+    runs-on: ubuntu-latest
+    outputs:
+      db_artifact: singine-db-base
+      schema_ver:  ${{ env.SCHEMA_VERSION }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run schema migrations (SQLite)
+        run: |
+          python3 $PYTHON_DIR/migrate.py \
+            --db        "$SQLITE_DB" \
+            --migrations "$SCHEMA_DIR" \
+            --env       "${{ github.event.inputs.target_env || 'dev' }}"
+
+      - name: Verify schema version
+        run: |
+          sqlite3 "$SQLITE_DB" \
+            "SELECT version,applied_at FROM schema_migrations ORDER BY version DESC LIMIT 5;"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: singine-db-base
+          path: ${{ env.SQLITE_DB }}
+          retention-days: 7
+
+  # ── Phase 3: Commit analysis base → master ────────────────────────────────
+  analyze:
+    name: "Phase 3 · Lineage analysis (base → master)"
+    needs: migrate
+    runs-on: ubuntu-latest
+    outputs:
+      lineage_id: ${{ steps.analyze.outputs.lineage_id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@v4
+        with:
+          name: singine-db-base
+
+      - name: Analyze commit (raw → base → master)
+        id: analyze
+        env:
+          GIT_COMMIT:  ${{ github.sha }}
+          GIT_BRANCH:  ${{ github.ref_name }}
+          GIT_AUTHOR:  ${{ github.actor }}
+          GIT_REPO:    ${{ github.repository }}
+        run: |
+          python3 $LOGSEQ_DIR/analyze_commit.py \
+            --db      "$SQLITE_DB" \
+            --commit  "$GIT_COMMIT" \
+            --branch  "$GIT_BRANCH" \
+            --author  "$GIT_AUTHOR" \
+            --repo    "$GIT_REPO"
+          # Capture lineage ID for downstream jobs
+          LID=$(sqlite3 "$SQLITE_DB" \
+            "SELECT gen_id FROM lineage ORDER BY created_at DESC LIMIT 1;")
+          echo "lineage_id=$LID" >> "$GITHUB_OUTPUT"
+
+      - name: Generate FOAF / DOAP / RSS
+        run: |
+          python3 $PYTHON_DIR/foaf_doap.py \
+            --db     "$SQLITE_DB" \
+            --commit "${{ github.sha }}" \
+            --output "semantic-web"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: singine-db-master
+          path: |
+            ${{ env.SQLITE_DB }}
+            semantic-web/
+          retention-days: 30
+
+  # ── Phase 4: Rust shortest-path on migration graph ────────────────────────
+  rust-path:
+    name: "Phase 4 · Shortest-path analysis (Rust)"
+    needs: [build, migrate]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: singine-db-base
+      - uses: actions/download-artifact@v4
+        with:
+          name: rust-engine
+      - name: Run shortest-path + ID-gen analysis
+        run: |
+          chmod +x persistence
+          ./persistence \
+            --db      "$SQLITE_DB" \
+            --mode    shortest-path \
+            --output  path-report.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: path-report
+          path: path-report.json
+
+  # ── Phase 5: Clojure multi-dimensional categories ─────────────────────────
+  clojure-cat:
+    name: "Phase 5 · Categories + similarity (Clojure/JVM)"
+    needs: analyze
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: singine-db-master
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install Leiningen
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein \
+            -o /usr/local/bin/lein && chmod +x /usr/local/bin/lein
+          lein version
+      - name: Fetch Clojure deps
+        working-directory: ${{ env.CLJ_DIR }}
+        run: lein deps
+      - name: Run category + similarity analysis
+        working-directory: ${{ env.CLJ_DIR }}
+        env:
+          SINGINE_DB:         ../../${{ env.SQLITE_DB }}
+          SINGINE_LINEAGE_ID: ${{ needs.analyze.outputs.lineage_id }}
+        run: lein run --mode categorise
+
+  # ── Phase 6: Final report ─────────────────────────────────────────────────
+  report:
+    name: "Phase 6 · Logseq knowledge graph + summary"
+    needs: [analyze, rust-path, clojure-cat]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: singine-db-master
+      - uses: actions/download-artifact@v4
+        with:
+          name: path-report
+          path: reports/
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Generate pipeline summary
+        run: |
+          python3 - <<'PYEOF'
+          import sqlite3, json, os
+          db = sqlite3.connect(os.environ.get("SQLITE_DB","singine.db"))
+          rows = db.execute(
+            "SELECT phase,status,started_at,finished_at FROM pipeline_runs "
+            "ORDER BY started_at"
+          ).fetchall()
+          print("| Phase | Status | Started | Finished |")
+          print("|---|---|---|---|")
+          for r in rows:
+              print(f"| {r[0]} | {r[1]} | {r[2]} | {r[3]} |")
+          db.close()
+          PYEOF
+        continue-on-error: true
+
+      - name: Write GitHub Job Summary
+        run: |
+          {
+            echo "## Singine Chain of Command — Run Summary"
+            echo ""
+            echo "| Field | Value |"
+            echo "|---|---|"
+            echo "| Commit | \`${{ github.sha }}\` |"
+            echo "| Branch | \`${{ github.ref_name }}\` |"
+            echo "| Actor  | ${{ github.actor }} |"
+            echo "| Schema | V${{ env.SCHEMA_VERSION }} |"
+            echo "| Lineage ID | ${{ needs.analyze.outputs.lineage_id }} |"
+            echo ""
+            echo "### Artifacts"
+            echo "- \`singine-db-master\` — final SQLite with full lineage"
+            echo "- \`path-report\` — Rust shortest-path JSON"
+            echo "- \`semantic-web/\` — FOAF / DOAP / RSS outputs"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: singine-final-db
+          path: ${{ env.SQLITE_DB }}
+          retention-days: 90

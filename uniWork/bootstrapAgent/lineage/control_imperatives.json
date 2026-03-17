@@ -1,0 +1,61 @@
+{
+  "controlImperatives": {
+    "version":     "1.0.0",
+    "description": "Approved control rules that every migration step must satisfy before advancing to the next maturity gate.",
+
+    "imperatives": [
+      {
+        "id":          "CI-001",
+        "name":        "Handshake Logged",
+        "description": "Every system-to-system connection must produce a validated, timestamped handshake log entry.",
+        "mandatory":   true,
+        "appliesTo":   ["all-stages"],
+        "evidenceFile": "logs/activity_*.log"
+      },
+      {
+        "id":          "CI-002",
+        "name":        "Lineage Completeness",
+        "description": "Each asset must trace to an approved source in the migration path before domain assignment.",
+        "mandatory":   true,
+        "appliesTo":   ["stage-2", "stage-3"],
+        "threshold":   0.8
+      },
+      {
+        "id":          "CI-003",
+        "name":        "Ownership Assigned",
+        "description": "Every investment asset must have an assigned data owner and steward in Collibra.",
+        "mandatory":   true,
+        "appliesTo":   ["stage-2", "stage-3", "stage-4", "stage-5"]
+      },
+      {
+        "id":          "CI-004",
+        "name":        "Policy Compliance",
+        "description": "Assets must pass all applicable data quality and privacy policies before certification.",
+        "mandatory":   true,
+        "appliesTo":   ["stage-3", "stage-4"]
+      },
+      {
+        "id":          "CI-005",
+        "name":        "Variance Gate",
+        "description": "KPI variance from baseline must be <= 10% for stage-4 advancement.",
+        "mandatory":   true,
+        "appliesTo":   ["stage-4"],
+        "threshold":   0.1
+      },
+      {
+        "id":          "CI-006",
+        "name":        "Back-Snap Available",
+        "description": "A restorable snapshot must exist before any stage-3+ migration executes.",
+        "mandatory":   true,
+        "appliesTo":   ["stage-3", "stage-4", "stage-5"]
+      },
+      {
+        "id":          "CI-007",
+        "name":        "Edge Cap Not Exceeded",
+        "description": "Concurrent migration count must not exceed the edge cap limit defined in edgeCap/model.json.",
+        "mandatory":   true,
+        "appliesTo":   ["all-stages"]
+      }
+    ]
+  }
+}

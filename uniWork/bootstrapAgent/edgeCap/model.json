@@ -1,0 +1,53 @@
+{
+  "model": "EdgeCapInvestmentMaturity",
+  "version": "1.0.0",
+  "description": "Edge capacity maturity model for investment asset governance. Defines the transition path from initial data state through optimised lineage-controlled governance. Each level gates the next migration phase.",
+  "transport": {
+    "layers": ["IP", "UDP", "TCP/TLS"],
+    "signalHandshake": "3-way TCP + application-layer CSRF/session token",
+    "validationLog": "bootstrapAgent/logs/activity_*.log"
+  },
+  "maturityLevels": [
+    {
+      "id":          "L1_Initial",
+      "label":       "Initial",
+      "description": "Ad-hoc processes. No structured lineage. Baseline capture only.",
+      "gateMetric":  "handshake_success == true",
+      "backSnap":    false
+    },
+    {
+      "id":          "L2_Developing",
+      "label":       "Developing",
+      "description": "Repeatable processes. Basic lineage established. Migration path defined.",
+      "gateMetric":  "lineage_completeness >= 0.5",
+      "backSnap":    false
+    },
+    {
+      "id":          "L3_Defined",
+      "label":       "Defined",
+      "description": "Standardised processes. Control imperatives enforced. Snapshot capability enabled.",
+      "gateMetric":  "control_imperatives_coverage >= 0.8",
+      "backSnap":    true
+    },
+    {
+      "id":          "L4_Managed",
+      "label":       "Managed",
+      "description": "Measured and controlled. Target metrics tracked. Edge cap limits enforced.",
+      "gateMetric":  "target_metric_variance <= 0.1",
+      "backSnap":    true
+    },
+    {
+      "id":          "L5_Optimizing",
+      "label":       "Optimizing",
+      "description": "Continuous improvement. Full lineage. Automated back-snap on regression.",
+      "gateMetric":  "regression_count == 0",
+      "backSnap":    true
+    }
+  ],
+  "edgeCapLimits": {
+    "maxConcurrentMigrations": 5,
+    "maxPayloadSizeKB":        512,
+    "maxRetries":              4,
+    "backoffSeconds":          [2, 4, 8, 16]
+  }
+}

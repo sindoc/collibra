@@ -1,0 +1,51 @@
+;; meta/config.edn — Singine Engine Core Meta Config
+;; Clone this prototype to bootstrap a new smtpAgent instance.
+;; All layers (C / Clojure JVM / Python) read from this single source of truth.
+
+{:singine
+ {:engine  "smtpAgent"
+  :version "1.0.0"
+  :repo    "sindoc/collibra"
+  :branch  "claude/bootstrap-agent-edge-cap-2f2SM"
+
+  ;; Declared runtime layers in dependency order
+  :layers  [:c-tcp :clojure-smtp :python-web]
+
+  ;; Package managers per layer
+  :package-managers
+  {:c      :make
+   :jvm    :leiningen     ; bootstrapped by meta/bootstrap.sh
+   :python :pip}
+
+  ;; Trusted origins — only these IPs may connect to the C TCP acceptor
+  :trusted-origins ["127.0.0.1" "::1"]
+
+  ;; ── C TCP acceptor ────────────────────────────────────────────────────────
+  :c-tcp
+  {:bind    "127.0.0.1"
+   :port    8025
+   :backlog 10
+   :log     "logs/tcp_accept.log"}
+
+  ;; ── Clojure SMTP service ──────────────────────────────────────────────────
+  :smtp
+  {:host     "smtp.gmail.com"   ; swap for any SMTP relay
+   :port     587
+   :tls      true
+   :auth     true
+   ;; Set these via env: SMTP_USER / SMTP_PASS (never commit credentials)
+   :from     "${SMTP_USER}"
+   :log      "logs/smtp.log"}
+
+  ;; ── Python web server ─────────────────────────────────────────────────────
+  :web
+  {:bind    "0.0.0.0"           ; 0.0.0.0 → reachable from iPad on LAN
+   :port    8080
+   :debug   false
+   :log     "logs/web.log"}
+
+  ;; ── Interpreter directives (parsed by Clojure singine interpreter) ────────
+  :interpreter
+  {:allowed-commands #{:send :ping :status :reload-config}
+   :max-body-bytes   65536
+   :templates-dir    "clojure/resources/templates"}}}
