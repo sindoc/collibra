@@ -22,6 +22,34 @@ from datetime import datetime, timezone
 PORT = int(os.environ.get("COLLIBRA_HTTP_PORT", 7080))
 SITE_ID = os.environ.get("COLLIBRA_EDGE_HOSTNAME", "edge-mock")
 
+# ── Representative sample data ────────────────────────────────────────────────
+
+_COMMUNITIES = [
+    {"id": "comm-001", "name": "Data Governance",    "description": "Collibra-governed data catalogue community"},
+    {"id": "comm-002", "name": "AI Platform",        "description": "AI session and model governance"},
+    {"id": "comm-003", "name": "Lutino.io Platform", "description": "Core platform capabilities and processes"},
+]
+
+_ASSETS = [
+    # Business Terms
+    {"id": "ast-bt-001", "name": "Business Term",       "type": {"name": "Business Term"}, "definition": "A canonical definition managed in the Collibra glossary"},
+    {"id": "ast-bt-002", "name": "Data Product",        "type": {"name": "Business Term"}, "definition": "A governed, discoverable data asset exposed via a defined interface"},
+    {"id": "ast-bt-003", "name": "Collibra Asset",      "type": {"name": "Business Term"}, "definition": "Any entity registered in the Collibra catalog"},
+    {"id": "ast-bt-004", "name": "Edge Node",           "type": {"name": "Business Term"}, "definition": "A Collibra Edge deployment node connecting an on-premise site to the cloud DGC"},
+    # Business Capabilities
+    {"id": "ast-bc-001", "name": "Data Cataloguing",    "type": {"name": "Business Capability"}, "definition": "Discover, register, and govern data assets"},
+    {"id": "ast-bc-002", "name": "AI Governance",       "type": {"name": "Business Capability"}, "definition": "Policy-backed governance of AI sessions and mandates"},
+    {"id": "ast-bc-003", "name": "Edge Connectivity",   "type": {"name": "Business Capability"}, "definition": "Connect on-premise systems to Collibra Cloud via Edge nodes"},
+    # Business Processes
+    {"id": "ast-bp-001", "name": "Asset Registration",  "type": {"name": "Business Process"}, "definition": "Register and classify data assets in the catalogue"},
+    {"id": "ast-bp-002", "name": "Edge Ingest",         "type": {"name": "Business Process"}, "definition": "Pull Collibra assets into the Singine cortex bridge via REST"},
+    # Data Categories
+    {"id": "ast-dc-001", "name": "Personal Data",       "type": {"name": "Data Category"}, "definition": "Data relating to an identified or identifiable natural person"},
+    {"id": "ast-dc-002", "name": "Operational Metrics", "type": {"name": "Data Category"}, "definition": "Runtime metrics, logs, and telemetry from platform services"},
+    # Policies
+    {"id": "ast-po-001", "name": "AI Access Policy",    "type": {"name": "Policy"}, "definition": "Governs which AI systems may access which data and operations"},
+]
+
 
 class DgcMockHandler(http.server.BaseHTTPRequestHandler):
 
@@ -44,7 +72,25 @@ class DgcMockHandler(http.server.BaseHTTPRequestHandler):
             self._json(200, {"status": "ok", "mock": True, "ts": datetime.now(timezone.utc).isoformat()})
 
         elif path.startswith("/rest/2.0/communities"):
-            self._json(200, {"total": 0, "offset": 0, "limit": 25, "results": []})
+            self._json(200, {"total": len(_COMMUNITIES), "offset": 0, "limit": 25,
+                              "results": _COMMUNITIES})
+
+        elif path.startswith("/rest/2.0/assets"):
+            # Filter by typeNames query param if present
+            qs = self.path[self.path.find("?")+1:] if "?" in self.path else ""
+            type_filter = None
+            for part in qs.split("&"):
+                if part.startswith("typeNames="):
+                    type_filter = part[len("typeNames="):].replace("%20", " ").replace("+", " ")
+            if type_filter:
+                filtered = [a for a in _ASSETS if a["type"]["name"] == type_filter]
+            else:
+                filtered = _ASSETS
+            limit  = int(next((p.split("=")[1] for p in qs.split("&") if p.startswith("limit=")),  "100"))
+            offset = int(next((p.split("=")[1] for p in qs.split("&") if p.startswith("offset=")), "0"))
+            page   = filtered[offset: offset + limit]
+            self._json(200, {"total": len(filtered), "offset": offset, "limit": limit,
+                              "results": page})
 
         elif path.startswith("/rest/2.0/"):
             self._json(200, {"mock": True, "path": path, "results": []})

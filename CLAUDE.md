@@ -13,6 +13,81 @@ This repository implements a **Bash-based contract ID generation and lifecycle m
 
 ---
 
+## singine collibra Integration
+
+All collibra-specific features are exposed through the `singine collibra` CLI
+family.  The command pattern is:
+
+```
+singine collibra <component> <command> [subcommand] [options]
+```
+
+The `singine_collibra/` Python package in this repository is the **core
+implementation**.  The singine CLI dynamically imports it when any
+`singine collibra id`, `singine collibra contract`, `singine collibra pipeline`,
+or `singine collibra server` subcommand is invoked.
+
+### Component Map
+
+| Component | singine command | Implementation |
+|-----------|----------------|----------------|
+| Edge stack | `singine collibra edge` | `edge/` (Docker, Java, Python) |
+| ID generation | `singine collibra id` | `id-gen/id_gen.sh`, `id-gen/namespaces.sh` |
+| Contracts | `singine collibra contract` | `id-gen/contracts/` |
+| ORM/SBVR pipeline | `singine collibra contract pipeline` | `id-gen/collibra/metamodel_7step.sh` |
+| API server | `singine collibra server` | `id-gen/server/server.sh` |
+| Mock DGC | `singine collibra edge up` (dev mode) | `edge/image/collibra-edge-mock/mock_dgc.py` |
+
+### Quick Reference
+
+```bash
+# Edge stack
+singine collibra edge build [--target base|collibra-edge|cdn|all]
+singine collibra edge setup --dev          # use mock DGC
+singine collibra edge up --detach
+singine collibra edge down
+singine collibra edge status --json
+singine collibra edge logs --service cdn --follow
+singine collibra edge agent run --task "Generate Collibra edge Deployment for RHEL 7.9"
+
+# Contract ID generation
+singine collibra id gen --ns c --project MyProject
+singine collibra id gen-topic --project MyProject
+singine collibra id tags
+singine collibra id push-tags
+singine collibra id detect-conflicts
+singine collibra id resolve-conflicts --strategy COLLIBRA_WINS
+
+# Contract lifecycle
+singine collibra contract new --project MyProject --kind DataContract
+singine collibra contract list
+singine collibra contract status <id> APPROVED
+singine collibra contract pipeline --id <id>
+singine collibra contract step 3 --id <id>
+singine collibra contract advance --id <id>
+singine collibra contract progress --all
+
+# Server
+singine collibra server start --port 7331 --mode net
+singine collibra server status
+singine collibra server stop
+singine collibra server dmz
+```
+
+### Python Package (`singine_collibra/`)
+
+The package is importable if you add the collibra repo root to `PYTHONPATH`:
+
+```bash
+export PYTHONPATH=$PYTHONPATH:~/ws/git/github/sindoc/collibra
+python3 -c "from singine_collibra import idgen; idgen.gen()"
+```
+
+Singine discovers it automatically via `COLLIBRA_DIR` (default:
+`~/ws/git/github/sindoc/collibra`).
+
+---
+
 ## Technology Stack
 
 | Layer | Technology | Notes |
