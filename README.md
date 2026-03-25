@@ -5,6 +5,11 @@ data contract lifecycle, ORM/SBVR semantic pipeline, and API server.
 
 All features are exposed through the `singine collibra` CLI family.
 
+This repository is the system of record for all Collibra-specific
+implementations. Singine may expose and document those capabilities, but the
+code that knows about Collibra APIs, SDKs, CLI conventions, Edge, datasource
+capabilities, and tenant-specific behaviors belongs here.
+
 ---
 
 ## Architecture
@@ -12,6 +17,49 @@ All features are exposed through the `singine collibra` CLI family.
 ```
 singine collibra <component> <command> [subcommand] [options]
 ```
+
+### Repository Boundary
+
+The architecture follows three hard boundaries:
+
+| Concern | System of record | Notes |
+|---|---|---|
+| Collibra-specific code | `collibra/` | REST API clients, SDK adapters, `collibractl` wrappers, Edge workflows, datasource/capability logic, Collibra runbooks |
+| Secure execution engine | `singine/` | authentication, authorisation, identity/provider routing, JVM orchestration, manpages/docbook publication, CLI runtime |
+| Payload/document transformation | `silkpage/` | XML, XSLT, XPath, RDF, TTL, SPARQL, SQL, GraphQL and adjacent transformation flows |
+
+Operational rule:
+
+- If the implementation depends on Collibra semantics, endpoints, SDK classes,
+  Edge behavior, or official Collibra CLI conventions, it belongs in this repo.
+- Singine should call into this repo through `COLLIBRA_DIR` discovery and thin
+  parser/invocation hooks.
+- SilkPage should be the preferred home for cross-format transformation logic,
+  especially where James Clark, Tim Bray, and Norman Walsh style XML-first
+  workflows are a better fit than ad hoc Python.
+
+### Hooking Model
+
+The preferred integration path is:
+
+```text
+singine CLI/runtime -> dynamic import from collibra/singine_collibra -> Collibra implementation
+                                                \
+                                                 -> silkpage for XML/RDF/XSLT/XPath transforms
+```
+
+That keeps Collibra behavior versioned here while still letting Singine provide
+the secure execution shell, docs toolchain, and operator ergonomics.
+
+### Reuse First
+
+Before adding new Collibra-specific code, check these existing assets:
+
+- `singine_collibra/` for Singine hook points
+- `collibra-integrations/` for JVM-oriented integration modules
+- `edge/` for Edge runtime, installer, and operator workflows
+- sibling `silkpage/` for transformation-heavy XML/RDF/XSLT/XPath work
+- sibling `tools-nested/collibra-fs/` for Collibra CLI and filesystem-oriented utilities
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐

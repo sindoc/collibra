@@ -11,6 +11,40 @@ This repository implements a **Bash-based contract ID generation and lifecycle m
 **Primary working directory:** `id-gen/`
 **Supporting utilities:** `uniWork/`
 
+## Repository Boundary Policy
+
+This repository is the canonical home for Collibra-specific implementation
+logic.
+
+Assistants should follow these rules:
+
+1. Put code here when it depends on Collibra REST APIs, SDKs, `collibractl`,
+   Edge runtime behavior, datasource capabilities, or tenant-facing Collibra
+   concepts.
+2. Keep Singine as the secure execution shell and documentation/runtime layer.
+   Singine may expose `singine collibra ...` commands, but the Collibra-aware
+   implementation should live here and be imported from here.
+3. Prefer SilkPage for XML/XSLT/XPath/RDF/TTL/SPARQL/SQL/GraphQL document and
+   payload transformation pipelines instead of duplicating transformation logic
+   in Collibra-specific Python.
+4. When in doubt, ask: "Does this code still make sense without Collibra?" If
+   no, it belongs in this repo.
+
+Concrete examples that belong here:
+
+- datasource creation/diagnosis for Edge
+- Edge capability wiring
+- Collibra API adapters and SDK shims
+- wrappers for official Collibra CLI conventions
+- Collibra-specific manpages and DocBook sources under `docs/`
+
+Concrete examples that belong in Singine:
+
+- generic authn/authz and identity-provider routing
+- JVM toolchain orchestration
+- generic command runtime infrastructure
+- cross-domain docs publication
+
 ---
 
 ## singine collibra Integration
