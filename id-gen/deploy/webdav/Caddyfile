@@ -1,0 +1,47 @@
+# Caddyfile — id-gen WebDAV inbox + API reverse proxy
+# Install Caddy with WebDAV: https://caddyserver.com/download (select webdav module)
+# Run: caddy run --config Caddyfile
+#
+# Layout:
+#   :8080/webdav/   → WebDAV inbox (PUT files here from iPad/client)
+#   :8080/api/      → id-gen Lisp/Python server (port 7331)
+#   :8080/health    → health check
+
+{
+    admin off
+    auto_https off
+}
+
+:8080 {
+    log {
+        output file /var/log/id-gen/caddy.log
+        format json
+    }
+
+    # ── WebDAV inbox ──────────────────────────────────────────────────────────
+    route /webdav/* {
+        uri strip_prefix /webdav
+        webdav {
+            root  {$INBOX_DIR:./deploy/inbox}
+            prefix /webdav
+        }
+    }
+
+    # ── id-gen API (reverse proxy to Lisp/Python server) ─────────────────────
+    route /api/* {
+        reverse_proxy localhost:{$IDGEN_PORT:7331}
+    }
+
+    # ── health ────────────────────────────────────────────────────────────────
+    route /health {
+        respond `{"status":"ok","service":"id-gen-webdav"}` 200
+    }
+
+    # ── UI (static progress.html) ─────────────────────────────────────────────
+    route /ui/* {
+        uri strip_prefix /ui
+        file_server {
+            root {$IDGEN_DIR:./id-gen}/ui
+        }
+    }
+}

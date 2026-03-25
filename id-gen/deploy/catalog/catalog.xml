@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE catalog PUBLIC "-//OASIS//DTD XML Catalogs V1.1//EN"
+  "http://www.oasis-open.org/committees/entity/release/1.1/catalog.dtd">
+<!--
+  OASIS XML Catalog v1.1 — id-gen namespace resolver
+  Resolves vocabulary URIs → local schema/ontology files.
+
+  Use with:
+    Java / Saxon:   -catalog:deploy/catalog/catalog.xml
+    xmllint:        XML_CATALOG_FILES=deploy/catalog/catalog.xml xmllint …
+    xmlcatalog:     xmlcatalog deploy/catalog/catalog.xml <uri>
+    Ant/xmlresolver: <xmlcatalog file="deploy/catalog/catalog.xml"/>
+
+  Aligned with Norman Walsh's xmlresolver and Saxon-HE XSLT 3.0.
+  See: https://xmlresolver.org  https://norm.walsh.name
+-->
+<catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog"
+         prefer="public">
+
+  <!-- ── id-gen internal namespace ─────────────────────────────────────────── -->
+  <uri name="https://api-vlab.collibra.com/ontology/"
+       uri="../governance/vocab_alignment.json"/>
+
+  <!-- ── W3C Core ──────────────────────────────────────────────────────────── -->
+  <uri name="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+       uri="schemas/rdf.ttl"/>
+  <uri name="http://www.w3.org/2000/01/rdf-schema#"
+       uri="schemas/rdfs.ttl"/>
+  <uri name="http://www.w3.org/2002/07/owl#"
+       uri="schemas/owl.ttl"/>
+  <uri name="http://www.w3.org/2001/XMLSchema#"
+       uri="schemas/xmlschema.xsd"/>
+
+  <!-- ── SKOS ──────────────────────────────────────────────────────────────── -->
+  <uri name="http://www.w3.org/2004/02/skos/core#"
+       uri="schemas/skos.rdf"/>
+  <uri name="http://www.w3.org/2004/02/skos/core"
+       uri="schemas/skos.rdf"/>
+
+  <!-- ── DCAT ──────────────────────────────────────────────────────────────── -->
+  <uri name="http://www.w3.org/ns/dcat#"
+       uri="schemas/dcat.ttl"/>
+  <uri name="http://www.w3.org/ns/dcat"
+       uri="schemas/dcat.ttl"/>
+
+  <!-- ── ODRL ──────────────────────────────────────────────────────────────── -->
+  <uri name="http://www.w3.org/ns/odrl/2/"
+       uri="schemas/odrl.ttl"/>
+
+  <!-- ── PROV-O ────────────────────────────────────────────────────────────── -->
+  <uri name="http://www.w3.org/ns/prov#"
+       uri="schemas/prov-o.ttl"/>
+  <uri name="http://www.w3.org/ns/prov"
+       uri="schemas/prov-o.ttl"/>
+
+  <!-- ── Dublin Core ───────────────────────────────────────────────────────── -->
+  <uri name="http://purl.org/dc/terms/"
+       uri="schemas/dcterms.ttl"/>
+  <uri name="http://purl.org/dc/elements/1.1/"
+       uri="schemas/dc.rdf"/>
+
+  <!-- ── SHACL ─────────────────────────────────────────────────────────────── -->
+  <uri name="http://www.w3.org/ns/shacl#"
+       uri="schemas/shacl.ttl"/>
+
+  <!-- ── OMG / SBVR ────────────────────────────────────────────────────────── -->
+  <uri name="https://www.omg.org/spec/SBVR/1.5/"
+       uri="schemas/sbvr.xml"/>
+
+  <!-- ── Atom / RSS ────────────────────────────────────────────────────────── -->
+  <uri name="http://www.w3.org/2005/Atom"
+       uri="schemas/atom.rng"/>
+  <public publicId="-//IETF//DTD RFC 4287 ATOM//EN"
+          uri="schemas/atom.rng"/>
+
+  <!-- ── DocBook (Norman Walsh) ────────────────────────────────────────────── -->
+  <public publicId="-//OASIS//DTD DocBook XML V5.0//EN"
+          uri="schemas/docbook/docbook.dtd"/>
+  <uri name="http://docbook.org/ns/docbook"
+       uri="schemas/docbook/docbook.rng"/>
+
+  <!-- ── XSLT 3.0 / XPath 3.1 ─────────────────────────────────────────────── -->
+  <uri name="http://www.w3.org/1999/XSL/Transform"
+       uri="xsl/identity.xsl"/>
+  <uri name="http://www.w3.org/ns/xproc"
+       uri="schemas/xproc.rng"/>
+
+  <!-- ── HTML / XHTML ──────────────────────────────────────────────────────── -->
+  <public publicId="-//W3C//DTD XHTML 1.0 Strict//EN"
+          uri="schemas/xhtml1-strict.dtd"/>
+
+  <!-- ── Collibra workflow / BPMN ──────────────────────────────────────────── -->
+  <uri name="http://www.omg.org/spec/BPMN/2.0/"
+       uri="schemas/bpmn20.xsd"/>
+
+  <!-- ── Delegate chains: fall through to next catalog ────────────────────── -->
+  <nextCatalog catalog="catalog-local.xml"/>
+
+</catalog>
