@@ -1,0 +1,491 @@
+.TH SINGINE\-EDGE\-AGENT 1 "2026\-03\-17" "singine 0.2.0" "User Commands"
+.
+.SH NAME
+singine\-edge\-agent \- prepare, install, and run the Collibra edge server agent
+using the singine platform
+.
+.SH SYNOPSIS
+.SS Locate
+.B singine find filesAboutTopic
+.I edge\-agent
+.RB [ \-\-root\-dir
+.IR DIR ]
+.RB [ \-\-json ]
+.PP
+.SS Governance
+.B singine decide
+.I edge\-agent
+.B \-\-decision
+.I approve
+.RB [ \-\-reason
+.IR TEXT ]
+.RB [ \-\-json ]
+.PP
+.SS Lifecycle (via runtime envelope)
+.B singine runtime exec\-external
+.B make
+.B \-C
+.I ~/ws/git/github/sindoc/collibra/edge/agent
+.RI [ TARGET ]
+.PP
+Canonical targets:
+.B prepare
+|
+.B install
+|
+.B run
+|
+.B run\-task\ TASK=\(dq...\(dq
+|
+.B validate
+|
+.B status
+|
+.B clean
+.
+.SH DESCRIPTION
+.B singine\-edge\-agent
+documents the full singine command workflow for the
+.B Collibra Edge Server Agent
+\(em a Claude API application
+.RI ( claude\-opus\-4\-6 ,
+adaptive thinking, streaming) that generates Kubernetes manifests,
+OpenShift 3.11 resources, and Collibra DGC edge configuration artifacts
+for
+.B CentOS\|/\|RHEL\ 7.7,\ 7.8,\ and\ 7.9 .
+.PP
+The project lives at
+.IR ~/ws/git/github/sindoc/collibra/edge/agent/ .
+All lifecycle operations are expressed as
+.BR make (1)
+targets in that directory so they can be wrapped uniformly by
+.BR singine\ runtime\ exec\-external (1) .
+.PP
+The six tools the agent can call are:
+.TP
+.B generate_kubernetes_manifest
+Deployment, Service, ConfigMap, or PersistentVolumeClaim YAML
+(Kubernetes \(<=\|1.21, SELinux
+.I spc_t
+context).
+.TP
+.B generate_openshift_resource
+Route, DeploymentConfig, ImageStream, or SecurityContextConstraints
+(OpenShift 3.11 API groups).
+.TP
+.B validate_rhel_compatibility
+Checks package lists and config snippets for RHEL 7.7\(en7.9 constraints
+(yum-only, no dnf; Docker CE; Kubernetes \(<=\|1.21; Java 11).
+.TP
+.B generate_collibra_edge_config
+Java startup options, firewalld zone XML, systemd unit, and edge
+properties file for a Collibra DGC edge node.
+.TP
+.B write_artifact / read_artifact
+Persist and retrieve generated files in the output directory.
+.
+.SH WHERE TO RUN
+.PP
+The
+.BR make (1)
+targets must be run from inside the project directory or with the
+.B \-C
+flag pointing at it:
+.PP
+.RS 4
+.EX
+cd ~/ws/git/github/sindoc/collibra/edge/agent
+make prepare
+.EE
+.RE
+.PP
+or from any working directory:
+.PP
+.RS 4
+.EX
+make \-C ~/ws/git/github/sindoc/collibra/edge/agent prepare
+.EE
+.RE
+.PP
+The
+.B singine runtime exec\-external
+wrapper captures context, output, and exit status in a structured JSON
+envelope \(em preferred when invocations should be recorded in the
+singine runtime layer:
+.PP
+.RS 4
+.EX
+singine runtime exec\-external make \-C ~/ws/git/github/sindoc/collibra/edge/agent prepare
+.EE
+.RE
+.
+.SH COMMANDS
+.
+.SS 1. Locate the project
+Use
+.B singine find filesAboutTopic
+to verify the project exists before running any lifecycle target.
+.TP
+.B singine find filesAboutTopic edge\-agent \-\-root\-dir ~/ws/git/github/sindoc/collibra \-\-json
+Find all files and directories related to
+.I edge\-agent
+under the collibra repository.  Returns a JSON envelope with
+.IR count ,
+.IR matches ,
+and resolved
+.IR root_dir .
+.TP
+.B singine find filesAboutTopic edge\-agent \-\-root\-dir ~/ws/git/github/sindoc/collibra \-\-type dir
+Restrict results to directories only \(em confirms
+.I edge/agent/
+exists and is not stale.
+.
+.SS 2. Register the work
+Use
+.B singine decide
+to attach a governance record before or after installation.
+.TP
+.B singine decide edge\-agent \-\-decision approve \-\-reason \(dqEdge agent: K8s/OpenShift/RHEL7/Collibra\(dq
+Register an approval decision for the
+.I edge\-agent
+asset.  Returns a URN of the form:
+.PP
+.RS 8
+.EX
+urn:singine:decision:edge\-agent:<ISO\-timestamp>
+.EE
+.RE
+.TP
+.B singine decide edge\-agent \-\-decision approve \-\-json
+Emit the full decision envelope as JSON:
+.PP
+.RS 8
+.EX
+singine decide edge\-agent \-\-decision approve \-\-json \[rs]
+  > ~/.singine/decisions/edge\-agent.json
+.EE
+.RE
+.
+.SS 3. Prepare (create virtualenv + install dependencies)
+.TP
+.B make \-C ~/ws/git/github/sindoc/collibra/edge/agent prepare
+Create
+.I .venv/
+and install
+.I requirements.txt
+(anthropic SDK).
+.TP
+.B singine runtime exec\-external make \-C ~/ws/git/github/sindoc/collibra/edge/agent prepare
+Same preparation wrapped in a singine runtime envelope.
+.
+.SS 4. Install (prepare + governance registration)
+.TP
+.B make \-C ~/ws/git/github/sindoc/collibra/edge/agent install
+Runs
+.B prepare
+and then calls
+.B singine decide
+to register an approval record.  If the singine server is offline,
+the decision is written to
+.I ~/.singine/decisions/edge\-agent.json
+automatically (see
+.BR OFFLINE ).
+.TP
+.B singine runtime exec\-external make \-C ~/ws/git/github/sindoc/collibra/edge/agent install
+Wrapped version.
+.
+.SS 5. Validate (tool smoke\-test, no API call)
+.TP
+.B make \-C ~/ws/git/github/sindoc/collibra/edge/agent validate
+Import all tools, assert all six schemas load, and run lightweight
+function calls to confirm
+.I tools.py
+and
+.I edge_agent.py
+are structurally healthy \(em no ANTHROPIC_API_KEY required.
+.TP
+.B singine runtime exec\-external make \-C ~/ws/git/github/sindoc/collibra/edge/agent validate
+Wrapped version; useful in CI.
+.
+.SS 6. Status
+.TP
+.B make \-C ~/ws/git/github/sindoc/collibra/edge/agent status
+Print venv path, Python version, anthropic package version, output
+directory artifact count, and current governance decision URN.
+.
+.SS 7. Run (default task)
+.TP
+.B make \-C ~/ws/git/github/sindoc/collibra/edge/agent run
+Run the agent with the built\-in default task: generate a complete
+RHEL 7.9 Collibra edge stack (Kubernetes Deployment + Service,
+OpenShift Route, firewalld zone XML, systemd unit).
+Artifacts are written to
+.IR output/ .
+.PP
+Requires
+.B ANTHROPIC_API_KEY
+to be set in the environment:
+.PP
+.RS 8
+.EX
+export ANTHROPIC_API_KEY=sk\-ant\-...
+make \-C ~/ws/git/github/sindoc/collibra/edge/agent run
+.EE
+.RE
+.TP
+.B singine runtime exec\-external make \-C ~/ws/git/github/sindoc/collibra/edge/agent run
+Wrapped version.
+.
+.SS 8. Run a custom task
+.TP
+.B make \-C ~/ws/git/github/sindoc/collibra/edge/agent run\-task TASK=\(dqdescription\(dq
+Run the agent with an arbitrary natural-language task:
+.PP
+.RS 8
+.EX
+make \-C ~/ws/git/github/sindoc/collibra/edge/agent run\-task \[rs]
+  TASK="Generate a Kubernetes PVC and ConfigMap for collibra\-edge on RHEL 7.8"
+.EE
+.RE
+.TP
+.B singine runtime exec\-external make \-C ~/ws/git/github/sindoc/collibra/edge/agent \[rs]
+.B run\-task TASK=\(dqdescription\(dq
+Wrapped version:
+.PP
+.RS 8
+.EX
+singine runtime exec\-external make \-C ~/ws/git/github/sindoc/collibra/edge/agent \[rs]
+  run\-task TASK="Generate firewalld rules and SCC for RHEL 7.7"
+.EE
+.RE
+.
+.SS 9. Clean
+.TP
+.B make \-C ~/ws/git/github/sindoc/collibra/edge/agent clean
+Remove
+.IR .venv/ ,
+.IR output/ ,
+and
+.IR __pycache__/ .
+.
+.SS 10. Inspect generated artifacts via singine
+.TP
+.B singine find filesAboutTopic edge\-agent \-\-root\-dir ~/ws/git/github/sindoc/collibra \-\-type file \-\-json
+List every file under
+.I edge/agent/
+to confirm artifacts were written.
+.
+.SH OFFLINE OPERATION
+When the singine server
+.RI ( http://localhost:8080 )
+is not running,
+.B singine decide
+exits with an error.
+.B make install
+handles this automatically via an inline fallback that writes the
+decision record locally:
+.PP
+.RS 4
+.EX
+~/.singine/decisions/edge\-agent.json
+.EE
+.RE
+.PP
+To record the decision manually at any time:
+.PP
+.RS 4
+.EX
+python3 \-c "
+import json, datetime, os
+ts = datetime.datetime.now(datetime.timezone.utc).strftime('%Y\-%m\-%dT%H:%M:%SZ')
+uid = 'edge\-agent'
+rec = {
+  'ok': True,
+  'urn': f'urn:singine:decision:{uid}:{ts}',
+  'id': uid, 'decision': 'approve',
+  'ts': ts, 'source': 'local\-fallback'
+}
+os.makedirs(os.path.expanduser('~/.singine/decisions'), exist_ok=True)
+open(os.path.expanduser(f'~/.singine/decisions/{uid}.json'), 'w').write(
+  json.dumps(rec, indent=2))
+print(rec['urn'])
+"
+.EE
+.RE
+.PP
+Re\-run
+.B singine decide
+once the server is back to obtain a server\-issued URN.
+.
+.SH ENVIRONMENT
+.TP
+.B ANTHROPIC_API_KEY
+Required by
+.B make run
+and
+.BR "make run\-task" .
+Must be set to a valid Anthropic API key before running the agent.
+.TP
+.B SINGINE_SESSION_TOKEN
+If set, included in
+.B runtime exec\-external
+payloads for audit tracing.
+.TP
+.B SINGINE_CORTEX_DB
+Override the default bridge database path
+.RI ( /tmp/sqlite.db ).
+.
+.SH FILES
+.TP
+.I ~/ws/git/github/sindoc/collibra/edge/agent/
+Project root.  Run all
+.BR make (1)
+targets from here (or use
+.BR \-C ).
+.TP
+.I ~/ws/git/github/sindoc/collibra/edge/agent/Makefile
+Defines the
+.BR prepare ,
+.BR install ,
+.BR run ,
+.BR run\-task ,
+.BR validate ,
+.BR status ,
+and
+.B clean
+targets.
+.TP
+.I ~/ws/git/github/sindoc/collibra/edge/agent/edge_agent.py
+Main agent entry point.  Streaming agentic loop,
+.BR argparse (3)
+CLI, tool dispatch.
+.TP
+.I ~/ws/git/github/sindoc/collibra/edge/agent/tools.py
+Six
+.B @beta_tool
+functions: generate_kubernetes_manifest, generate_openshift_resource,
+validate_rhel_compatibility, generate_collibra_edge_config,
+write_artifact, read_artifact.
+.TP
+.I ~/ws/git/github/sindoc/collibra/edge/agent/requirements.txt
+Single dependency:
+.IR anthropic\|>=\|0.50.0 .
+.TP
+.I ~/ws/git/github/sindoc/collibra/edge/agent/.venv/
+Python virtualenv created by
+.BR "make prepare" .
+.TP
+.I ~/ws/git/github/sindoc/collibra/edge/agent/output/
+Generated artifacts written by the agent (YAML, XML, .service, .properties).
+.TP
+.I ~/.singine/decisions/edge\-agent.json
+Local governance decision record (offline fallback).
+.
+.SH EXAMPLES
+.SS Full workflow from a clean state
+.PP
+.EX
+# 0. Confirm the project location
+singine find filesAboutTopic edge\-agent \[rs]
+  \-\-root\-dir ~/ws/git/github/sindoc/collibra \-\-type dir
+
+# 1. Register the work (server must be running; see OFFLINE if not)
+singine decide edge\-agent \[rs]
+  \-\-decision approve \[rs]
+  \-\-reason "Edge agent: Kubernetes/OpenShift/RHEL7/Collibra edge" \[rs]
+  \-\-json > ~/.singine/decisions/edge\-agent.json
+
+# 2. Prepare virtualenv and install dependencies
+make \-C ~/ws/git/github/sindoc/collibra/edge/agent prepare
+
+# 3. Validate tools without making an API call
+make \-C ~/ws/git/github/sindoc/collibra/edge/agent validate
+
+# 4. Check status
+make \-C ~/ws/git/github/sindoc/collibra/edge/agent status
+
+# 5. Run the agent with the default task (requires ANTHROPIC_API_KEY)
+export ANTHROPIC_API_KEY=sk\-ant\-...
+make \-C ~/ws/git/github/sindoc/collibra/edge/agent run
+
+# 6. List generated artifacts
+singine find filesAboutTopic edge\-agent \[rs]
+  \-\-root\-dir ~/ws/git/github/sindoc/collibra \-\-type file \-\-json
+.EE
+.SS Wrapped in the singine runtime envelope
+.PP
+.EX
+# Prepare
+singine runtime exec\-external \[rs]
+  make \-C ~/ws/git/github/sindoc/collibra/edge/agent prepare
+
+# Validate
+singine runtime exec\-external \[rs]
+  make \-C ~/ws/git/github/sindoc/collibra/edge/agent validate
+
+# Run default task
+singine runtime exec\-external \[rs]
+  make \-C ~/ws/git/github/sindoc/collibra/edge/agent run
+
+# Run custom task
+singine runtime exec\-external \[rs]
+  make \-C ~/ws/git/github/sindoc/collibra/edge/agent \[rs]
+  run\-task TASK="Generate SecurityContextConstraints for Collibra edge on RHEL 7.9"
+.EE
+.SS install target (prepare + governance in one step)
+.PP
+.EX
+singine runtime exec\-external \[rs]
+  make \-C ~/ws/git/github/sindoc/collibra/edge/agent install
+.EE
+.
+.SH SEE ALSO
+.BR singine (1),
+.BR singine\-find (1),
+.BR singine\-decide (1),
+.BR singine\-runtime (1),
+.BR singine\-install (1),
+.BR singine\-collibra (1),
+.BR make (1)
+.
+.SH PLATFORM NOTES
+.TP
+.B Target OS
+CentOS\|/\|RHEL 7.7, 7.8, 7.9.
+Package manager:
+.BR yum (1)
+(never dnf).
+Container runtime: Docker CE (docker\-ce RPM).
+.TP
+.B Kubernetes
+Version \(<=\|1.21.  Installed via kubernetes.io RPM repository
+(kubelet, kubeadm, kubectl).
+.TP
+.B OpenShift
+OKD\|/\|OCP 3.11.  API groups:
+.IR apps.openshift.io/v1 ,
+.IR route.openshift.io/v1 ,
+.IR image.openshift.io/v1 ,
+.IR security.openshift.io/v1 .
+.TP
+.B Collibra edge
+DGC Edge node.  Requires
+.I java\-11\-openjdk .
+Default ports: HTTP 7080, HTTPS 7443.
+firewalld zone XML generated by
+.BR generate_collibra_edge_config .
+.TP
+.B SELinux
+Enforcing mode assumed on all target nodes.  Generated pod specs include
+.IR seLinuxOptions.type\|=\|spc_t .
+.TP
+.B Claude model
+.I claude\-opus\-4\-6
+with
+.IR thinking={\(dqtype\(dq:\(dqadaptive\(dq} .
+Streaming enabled; adaptive thinking dynamically controls reasoning depth.
+.
+.SH AUTHOR
+skh <skh@sindoc.io>
+.br
+singine 0.2.0                     2026\-03\-17              SINGINE\-EDGE\-AGENT(1)

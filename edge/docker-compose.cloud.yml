@@ -1,0 +1,80 @@
+# docker-compose.cloud.yml — cloud-connected edge stack
+#
+# Connects the edge site directly to Collibra DGC cloud (lutino.collibra.com).
+# No local collibra-edge mock — DGC_URL points to the cloud instance.
+#
+# Prerequisites:
+#   .env must have:
+#     COLLIBRA_DGC_URL=https://lutino.collibra.com
+#     COLLIBRA_EDGE_SITE_ID=6569521c-dad2-45a2-aed7-ca2008bc571a
+#     COLLIBRA_EDGE_REG_KEY=<key from Settings > Edge Sites > Generate key>
+#
+# Usage:
+#   docker compose -f docker-compose.cloud.yml --env-file .env up -d
+
+networks:
+  edge-net:
+    driver: bridge
+
+volumes:
+  edge-site-logs:
+  cdn-cache:
+  cdn-logs:
+
+services:
+
+  # ── Collibra Edge Site server ─────────────────────────────────────────────
+  edge-site:
+    platform: linux/amd64
+    image: sindoc-collibra-edge-site:local
+    environment:
+      COLLIBRA_EDGE_HOSTNAME:  ${COLLIBRA_EDGE_HOSTNAME:-edge.lutino.io}
+      COLLIBRA_DGC_URL:        ${COLLIBRA_DGC_URL:-https://lutino.collibra.com}
+      COLLIBRA_EDGE_SITE_ID:   ${COLLIBRA_EDGE_SITE_ID}
+      COLLIBRA_EDGE_SITE_NAME: ${COLLIBRA_EDGE_SITE_NAME:-Lutino.io's Dev Edge Site}
+      COLLIBRA_EDGE_REG_KEY:   ${COLLIBRA_EDGE_REG_KEY}
+      EDGE_SITE_HTTP_PORT:     "8080"
+      EDGE_SITE_CAPABILITIES:  ${EDGE_SITE_CAPABILITIES:-site,connect,catalog}
+      JAVA_OPTS: "-Xms256m -Xmx512m -XX:+UseG1GC -Djava.awt.headless=true"
+    volumes:
+      - edge-site-logs:/opt/edge/site/logs
+    networks:
+      - edge-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # ── nginx CDN / TLS proxy ─────────────────────────────────────────────────
+  cdn:
+    platform: linux/amd64
+    image: sindoc-collibra-cdn:local
+    depends_on:
+      edge-site:
+        condition: service_healthy
+    environment:
+      IRIB3_ORIGIN_HOST:  ${IRIB3_ORIGIN_HOST:-lenz.splus.ir}
+      IRIB3_STREAM_PATH:  ${IRIB3_STREAM_PATH:-/PLTV/88888888/224/3221226868/index.m3u8}
+      IRIB3_CDN_HOST:     ${IRIB3_CDN_HOST:-tv.edge.lutino.io}
+      CDN_HOST:           ${CDN_HOST:-cdn.persiangulf.org}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./certs:/opt/edge/cdn/certs:ro
+      - cdn-cache:/opt/edge/cdn/cache
+      - cdn-logs:/opt/edge/cdn/logs
+      - ./image/cdn/conf.d/collibra-upstream.cloud.conf:/etc/nginx/conf.d/collibra-upstream.conf:ro
+      - ./mms-channels.json:/opt/edge/cdn/mms-channels.json:ro
+    networks:
+      - edge-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

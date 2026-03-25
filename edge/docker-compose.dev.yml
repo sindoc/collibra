@@ -1,0 +1,92 @@
+# docker-compose.dev.yml — local development stack
+#
+# Differences from docker-compose.yml:
+#   - collibra-edge is replaced by collibra-edge-mock (Python, arm64-native)
+#   - All CentOS 7 images use platform: linux/amd64 for Apple Silicon
+#   - Suitable for local development without a Collibra license
+#
+# Usage:
+#   docker compose -f docker-compose.dev.yml up -d
+#   (or let scripts/setup.sh handle it automatically)
+
+version: "3.8"
+
+networks:
+  edge-net:
+    driver: bridge
+
+volumes:
+  edge-site-logs:
+  cdn-cache:
+  cdn-logs:
+
+services:
+
+  # ── Collibra DGC Edge mock (arm64-native Python) ──────────────────────────
+  collibra-edge:
+    image: sindoc-collibra-edge-mock:local
+    environment:
+      COLLIBRA_HTTP_PORT:     "7080"
+      COLLIBRA_EDGE_HOSTNAME: ${COLLIBRA_EDGE_HOSTNAME:-edge.local}
+    networks:
+      - edge-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python3", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:7080/rest/2.0/ping')"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  # ── Collibra Edge Site server (CentOS 7 / linux/amd64) ───────────────────
+  edge-site:
+    platform: linux/amd64
+    image: sindoc-collibra-edge-site:local
+    environment:
+      COLLIBRA_EDGE_HOSTNAME:  ${COLLIBRA_EDGE_HOSTNAME:-edge.local}
+      COLLIBRA_DGC_URL:        http://collibra-edge:7080
+      COLLIBRA_EDGE_SITE_ID:   ${COLLIBRA_EDGE_SITE_ID:-edge-site-local}
+      COLLIBRA_EDGE_SITE_NAME: ${COLLIBRA_EDGE_SITE_NAME:-Local Edge Site}
+      COLLIBRA_EDGE_REG_KEY:   ${COLLIBRA_EDGE_REG_KEY:-dev-placeholder-key}
+      EDGE_SITE_HTTP_PORT:     "8080"
+      EDGE_SITE_CAPABILITIES:  ${EDGE_SITE_CAPABILITIES:-site,connect,catalog}
+      JAVA_OPTS: "-Xms256m -Xmx512m -XX:+UseG1GC -Djava.awt.headless=true"
+    depends_on:
+      collibra-edge:
+        condition: service_healthy
+    volumes:
+      - edge-site-logs:/opt/edge/site/logs
+    networks:
+      - edge-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # ── nginx CDN / TLS proxy (CentOS 7 / linux/amd64) ───────────────────────
+  cdn:
+    platform: linux/amd64
+    image: sindoc-collibra-cdn:local
+    depends_on:
+      edge-site:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./certs:/opt/edge/cdn/certs:ro
+      - cdn-cache:/opt/edge/cdn/cache
+      - cdn-logs:/opt/edge/cdn/logs
+    networks:
+      - edge-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

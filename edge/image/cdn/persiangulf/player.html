@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PersianGulf CDN – Live TV</title>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0a0a0a;
+      color: #eee;
+      font-family: system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 24px 16px;
+    }
+    h1  { font-size: 1.4rem; margin-bottom: 8px; color: #f90; }
+    #ch { font-size: 1rem; margin-bottom: 6px; color: #ccc; }
+    #status {
+      font-size: 0.8rem;
+      color: #888;
+      margin-bottom: 16px;
+      min-height: 1.1em;
+      font-family: monospace;
+    }
+    video {
+      width: 100%;
+      max-width: 960px;
+      background: #000;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <h1>PersianGulf CDN</h1>
+  <div id="ch"></div>
+  <div id="status">Loading…</div>
+  <video id="player" controls autoplay muted playsinline></video>
+
+  <script>
+    (async () => {
+      const params   = new URLSearchParams(location.search);
+      const channel  = params.get('channel');
+      const statusEl = document.getElementById('status');
+      const chEl     = document.getElementById('ch');
+      const video    = document.getElementById('player');
+
+      if (!channel) {
+        statusEl.textContent = 'No channel specified — use ?channel=irib3';
+        return;
+      }
+
+      let channels;
+      try {
+        const res = await fetch('/channels.json');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        channels = await res.json();
+      } catch (e) {
+        statusEl.textContent = `Failed to load channel list: ${e.message}`;
+        return;
+      }
+
+      const ch = channels.find(c => c.name === channel);
+      if (!ch) {
+        statusEl.textContent = `Channel "${channel}" not found in catalogue.`;
+        return;
+      }
+
+      chEl.textContent = ch.name + (ch.group ? ` · ${ch.group}` : '');
+
+      // CDN proxy URL: /proxy/<name><path>  (path already starts with /)
+      const streamUrl = `/proxy/${ch.name}${ch.path}`;
+      statusEl.textContent = streamUrl;
+
+      if (Hls.isSupported()) {
+        const hls = new Hls({ debug: false });
+        hls.loadSource(streamUrl);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          video.play().catch(() => {});
+        });
+        hls.on(Hls.Events.ERROR, (_, data) => {
+          if (data.fatal) {
+            statusEl.textContent = `HLS error: ${data.type} / ${data.details}`;
+          }
+        });
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        // Safari native HLS
+        video.src = streamUrl;
+        video.play().catch(() => {});
+      } else {
+        statusEl.textContent = 'HLS is not supported in this browser.';
+      }
+    })();
+  </script>
+</body>
+</html>

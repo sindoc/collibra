@@ -1,0 +1,42 @@
+[
+  {
+    "name": "irib3",
+    "origin": "lenz.splus.ir",
+    "path": "/PLTV/88888888/224/3221226868/index.m3u8",
+    "cdn_host": "irib3.persiangulf.org",
+    "group": "Sports",
+    "added_at": "2026-03-24T23:07:14Z",
+    "last_probe": "000",
+    "last_probed_at": "2026-03-24T23:11:56Z"
+  },
+  {
+    "name": "gem-tv",
+    "origin": "ca-rt.onetv.app",
+    "path": "/gem/index-0.m3u8",
+    "cdn_host": "gem-tv.persiangulf.org",
+    "group": "Movies",
+    "added_at": "2026-03-24T23:07:14Z",
+    "last_probe": "200",
+    "last_probed_at": "2026-03-24T23:11:57Z"
+  },
+  {
+    "name": "manoto",
+    "origin": "ca-rt.onetv.app",
+    "path": "/manototv/index-0.m3u8",
+    "cdn_host": "manoto.persiangulf.org",
+    "group": "Entertainment",
+    "added_at": "2026-03-24T23:07:14Z",
+    "last_probe": "200",
+    "last_probed_at": "2026-03-24T23:11:58Z"
+  },
+  {
+    "name": "persiana-cinema",
+    "origin": "cinehls.persiana.live",
+    "path": "/hls/stream.m3u8",
+    "cdn_host": "persiana-cinema.persiangulf.org",
+    "group": "Movies",
+    "added_at": "2026-03-24T23:07:15Z",
+    "last_probe": "200",
+    "last_probed_at": "2026-03-24T23:11:58Z"
+  }
+]
