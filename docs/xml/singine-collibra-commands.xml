@@ -1,0 +1,494 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  singine-collibra-commands.xml
+  XML command reference for the singine collibra CLI family.
+
+  This document is the system-of-design for the singine collibra command surface.
+  It follows the Elia/Collibra XML modelling conventions from CLAUDE.md.
+-->
+<singine-collibra-commands version="1.0" generated="2026-03-25">
+
+  <description>
+    Command reference for the singine collibra CLI family.
+    Pattern: singine collibra &lt;component&gt; &lt;command&gt; [subcommand] [options]
+  </description>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- EDGE                                                                    -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <component name="edge" help="Collibra edge stack lifecycle — build, deploy, manage">
+    <description>
+      Manages the Collibra edge stack in ~/ws/git/github/sindoc/collibra/edge/.
+      Three-service Docker Compose: CDN (nginx), edge-site (Java), collibra-edge (DGC or mock).
+    </description>
+    <implementation>edge/ (Docker Compose, Java, nginx, Python mock)</implementation>
+
+    <commands>
+
+      <command name="build" help="Build edge container image(s)">
+        <options>
+          <option name="--target" choices="base,collibra-edge,cdn,all" default="all"/>
+          <option name="--tag"    default="local"/>
+          <option name="--no-cache" type="flag"/>
+          <option name="--json"   type="flag"/>
+        </options>
+        <example>singine collibra edge build --target cdn --tag v1.0.0</example>
+      </command>
+
+      <command name="push" help="Tag and push image(s) to a registry">
+        <options>
+          <option name="--registry" required="true"/>
+          <option name="--target"   choices="base,collibra-edge,cdn,all" default="all"/>
+          <option name="--tag"      default="local"/>
+          <option name="--json"     type="flag"/>
+        </options>
+        <example>singine collibra edge push --registry registry.example.com --tag v1.0.0</example>
+      </command>
+
+      <command name="setup" help="Full automated setup (certs, .env, images, start)">
+        <options>
+          <option name="--dev"      type="flag" help="Use mock DGC (auto if no collibra-edge.jar)"/>
+          <option name="--no-start" type="flag"/>
+          <option name="--tag"      default="local"/>
+          <option name="--json"     type="flag"/>
+        </options>
+        <example>singine collibra edge setup --dev</example>
+      </command>
+
+      <command name="install" help="Build all images + agent venv + governance decision">
+        <options>
+          <option name="--tag"  default="local"/>
+          <option name="--json" type="flag"/>
+        </options>
+        <example>singine collibra edge install</example>
+      </command>
+
+      <command name="deploy" help="install + up (full bring-up from scratch)">
+        <options>
+          <option name="--tag"  default="local"/>
+          <option name="--json" type="flag"/>
+        </options>
+        <example>singine collibra edge deploy --tag v1.0.0</example>
+      </command>
+
+      <command name="up" help="Start the stack via docker compose">
+        <options>
+          <option name="--detach" short="-d" type="flag"/>
+          <option name="--json"   type="flag"/>
+        </options>
+        <example>singine collibra edge up --detach</example>
+      </command>
+
+      <command name="down" help="Stop and remove containers">
+        <options>
+          <option name="--json" type="flag"/>
+        </options>
+        <example>singine collibra edge down</example>
+      </command>
+
+      <command name="cloud" help="Start stack in cloud mode (→ lutino.collibra.com)">
+        <options>
+          <option name="--json" type="flag"/>
+        </options>
+        <example>singine collibra edge cloud</example>
+      </command>
+
+      <command name="logs" help="Stream or print container logs">
+        <options>
+          <option name="--service" choices="edge-site,collibra-edge,cdn"/>
+          <option name="--follow"  short="-f" type="flag"/>
+        </options>
+        <example>singine collibra edge logs --service cdn --follow</example>
+      </command>
+
+      <command name="status" help="Show image, container, and governance decision status">
+        <options>
+          <option name="--json" type="flag"/>
+        </options>
+        <example>singine collibra edge status --json</example>
+      </command>
+
+      <command name="test" help="Run the full edge API test suite">
+        <options>
+          <option name="--url"  default="https://localhost"/>
+          <option name="--k8s"  type="flag"/>
+          <option name="--json" type="flag"/>
+        </options>
+        <example>singine collibra edge test --url https://localhost</example>
+      </command>
+
+      <command name="javadoc" help="Build Javadoc for edge/java/">
+        <options>
+          <option name="--json" type="flag"/>
+        </options>
+        <example>singine collibra edge javadoc</example>
+      </command>
+
+      <command name="site" help="Installer-backed Edge site bootstrap">
+        <subcommands>
+          <command name="init" help="Deploy from installer/ and verify">
+            <args>
+              <arg name="name" required="true" help="Local site label"/>
+            </args>
+            <options>
+              <option name="--edge-dir"       default="~/ws/git/github/sindoc/collibra/edge"/>
+              <option name="--installer-dir"/>
+              <option name="--namespace"      default="collibra-edge"/>
+              <option name="--keep-dev-stack" type="flag"/>
+              <option name="--dry-run"        type="flag"/>
+              <option name="--json"           type="flag"/>
+            </options>
+            <example>singine collibra edge site init sindoc-edge --dry-run</example>
+          </command>
+        </subcommands>
+      </command>
+
+      <command name="k8s" help="Kubernetes deployment via Helm">
+        <subcommands>
+          <command name="prereqs"   help="Verify helm/kubectl/jq/yq and cluster">
+            <options><option name="--json" type="flag"/></options>
+          </command>
+          <command name="install"   help="Deploy via Helm into collibra-edge namespace">
+            <options>
+              <option name="--dry-run" type="flag"/>
+              <option name="--json"    type="flag"/>
+            </options>
+          </command>
+          <command name="uninstall" help="Helm uninstall and delete namespace">
+            <options><option name="--json" type="flag"/></options>
+          </command>
+          <command name="status"    help="Helm release and pod health">
+            <options>
+              <option name="--namespace" short="-n" default="collibra-edge"/>
+              <option name="--json"      type="flag"/>
+            </options>
+          </command>
+          <command name="logs"      help="Stream pod logs">
+            <args>
+              <arg name="component" required="true"
+                   choices="edge-proxy,edge-controller,edge-cd,edge-session-manager,otel-agent"/>
+            </args>
+            <options>
+              <option name="--namespace" short="-n" default="collibra-edge"/>
+              <option name="--follow"    short="-f" type="flag"/>
+              <option name="--tail"      type="int"  default="100"/>
+            </options>
+          </command>
+          <command name="test"      help="K8s edge test suite">
+            <options>
+              <option name="--namespace" short="-n" default="collibra-edge"/>
+              <option name="--json"      type="flag"/>
+            </options>
+          </command>
+        </subcommands>
+      </command>
+
+      <command name="agent" help="Claude API artifact generator">
+        <subcommands>
+          <command name="validate" help="Smoke-test tools (no API call)">
+            <options><option name="--json" type="flag"/></options>
+          </command>
+          <command name="install"  help="Prepare venv + governance decision">
+            <options><option name="--json" type="flag"/></options>
+          </command>
+          <command name="status"   help="Venv, packages, decision status">
+            <options><option name="--json" type="flag"/></options>
+          </command>
+          <command name="run"      help="Run agent with natural-language task">
+            <options>
+              <option name="--task"       required="true" help="Natural-language task description"/>
+              <option name="--output-dir" metavar="DIR"/>
+              <option name="--json"       type="flag"/>
+            </options>
+            <example>singine collibra edge agent run --task "Generate Collibra edge Deployment for RHEL 7.9"</example>
+          </command>
+        </subcommands>
+      </command>
+
+    </commands>
+  </component>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- ID                                                                      -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <component name="id" help="Contract ID generation and namespace registry">
+    <description>
+      Mints unique IDs as annotated git tags in the format id-gen/&lt;ns&gt;.&lt;kind&gt;.&lt;uuid&gt;.
+      Registries live in id-gen/namespaces/. Never edit registry files manually.
+    </description>
+    <implementation>id-gen/id_gen.sh, id-gen/namespaces.sh</implementation>
+
+    <namespaces>
+      <namespace prefix="c" owner="Collibra" priority="1" note="privileged — production IDs"/>
+      <namespace prefix="a" owner="Reserved"  priority="3"/>
+      <namespace prefix="b" owner="Reserved"  priority="2"/>
+    </namespaces>
+
+    <commands>
+
+      <command name="gen" help="Mint a new contract ID (git-tag persisted)">
+        <options>
+          <option name="--ns"      choices="c,a,b" default="c"/>
+          <option name="--project" default="DefaultProject"/>
+          <option name="--kind"    default="contract"/>
+        </options>
+        <example>singine collibra id gen --ns c --project EliaBalancing</example>
+      </command>
+
+      <command name="gen-topic" help="Mint a topic ID for a project">
+        <options>
+          <option name="--project" default="DefaultProject"/>
+        </options>
+        <example>singine collibra id gen-topic --project EliaBalancing</example>
+      </command>
+
+      <command name="import" help="Register an existing Collibra UUID into namespace c">
+        <options>
+          <option name="--uuid"    required="true" metavar="UUID"/>
+          <option name="--kind"    required="true" metavar="KIND"/>
+          <option name="--project" default="DefaultProject"/>
+        </options>
+        <example>singine collibra id import --uuid f47ac10b-58cc-4372-a567-0e02b2c3d479 --kind BusinessTerm</example>
+      </command>
+
+      <command name="tags" help="List all id-gen git tags">
+        <example>singine collibra id tags</example>
+      </command>
+
+      <command name="push-tags" help="Push id-gen git tags to origin">
+        <example>singine collibra id push-tags</example>
+      </command>
+
+      <command name="detect-conflicts" help="Scan namespace registries for merge conflicts">
+        <example>singine collibra id detect-conflicts</example>
+      </command>
+
+      <command name="resolve-conflicts" help="Auto-resolve namespace registry merge conflicts">
+        <options>
+          <option name="--strategy" choices="COLLIBRA_WINS,OURS,THEIRS,ASK,MANUAL"
+                  default="COLLIBRA_WINS"
+                  help="COLLIBRA_WINS prefers c.* IDs (recommended)"/>
+        </options>
+        <example>singine collibra id resolve-conflicts --strategy COLLIBRA_WINS</example>
+      </command>
+
+    </commands>
+  </component>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- CONTRACT                                                                -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <component name="contract" help="Data contract lifecycle and ORM/SBVR pipeline">
+    <description>
+      Scaffolds, tracks, and advances data contracts through a 7-step ORM/SBVR
+      semantic transformation pipeline. Contracts are JSON files validated against
+      id-gen/contracts/contract_schema.json (JSON Schema draft-07).
+    </description>
+    <implementation>id-gen/contracts/, id-gen/collibra/metamodel_7step.sh</implementation>
+
+    <pipeline-steps>
+      <step n="0" label="INIT"       status="DRAFT"            progress="0"/>
+      <step n="1" label="EXTRACT"    status="DRAFT"            progress="14"/>
+      <step n="2" label="CLASSIFY"   status="DRAFT"            progress="29"/>
+      <step n="3" label="RELATE"     status="DRAFT"            progress="43"/>
+      <step n="4" label="CONSTRAIN"  status="PENDING_APPROVAL" progress="57"/>
+      <step n="5" label="VERBALIZE"  status="PENDING_APPROVAL" progress="71"/>
+      <step n="6" label="ALIGN"      status="PENDING_APPROVAL" progress="86"/>
+      <step n="7" label="CONTRACT"   status="APPROVED"         progress="100"/>
+    </pipeline-steps>
+
+    <statuses>
+      <status name="DRAFT"/>
+      <status name="PENDING_APPROVAL"/>
+      <status name="APPROVED"/>
+      <status name="REJECTED"/>
+      <status name="ACTIVE"/>
+      <status name="DEPRECATED"/>
+    </statuses>
+
+    <kinds>
+      <kind name="DataContract"/>
+      <kind name="UseCaseContract"/>
+      <kind name="ServiceContract"/>
+      <kind name="GovernanceContract"/>
+    </kinds>
+
+    <commands>
+
+      <command name="new" help="Scaffold a new data contract">
+        <options>
+          <option name="--project" default="DefaultProject"/>
+          <option name="--kind"    choices="DataContract,UseCaseContract,ServiceContract,GovernanceContract"
+                  default="DataContract"/>
+        </options>
+        <example>singine collibra contract new --project EliaBalancing --kind DataContract</example>
+      </command>
+
+      <command name="list" help="List all contracts in contracts/store/">
+        <example>singine collibra contract list</example>
+      </command>
+
+      <command name="status" help="Update a contract's status">
+        <args>
+          <arg name="contract_id" required="true"/>
+          <arg name="status"      required="true"
+               choices="DRAFT,PENDING_APPROVAL,APPROVED,REJECTED,ACTIVE,DEPRECATED"/>
+        </args>
+        <example>singine collibra contract status c.contract.f47ac10b APPROVED</example>
+      </command>
+
+      <command name="pipeline" help="Run the full 7-step ORM/SBVR pipeline">
+        <options>
+          <option name="--id" dest="contract_id" metavar="CONTRACT_ID"/>
+        </options>
+        <example>singine collibra contract pipeline --id c.contract.f47ac10b</example>
+      </command>
+
+      <command name="step" help="Run a single pipeline step (1–7)">
+        <args>
+          <arg name="n" required="true" type="int" choices="1,2,3,4,5,6,7"/>
+        </args>
+        <options>
+          <option name="--id" dest="contract_id" metavar="CONTRACT_ID"/>
+        </options>
+        <example>singine collibra contract step 3 --id c.contract.f47ac10b</example>
+      </command>
+
+      <command name="advance" help="Advance contract to the next pipeline step">
+        <options>
+          <option name="--id" dest="contract_id" metavar="CONTRACT_ID"/>
+        </options>
+        <example>singine collibra contract advance --id c.contract.f47ac10b</example>
+      </command>
+
+      <command name="progress" help="Show pipeline progress">
+        <options>
+          <option name="--id"   dest="contract_id" metavar="CONTRACT_ID"/>
+          <option name="--all"  type="flag" help="Show all contracts"/>
+          <option name="--json" type="flag"/>
+        </options>
+        <example>singine collibra contract progress --all</example>
+        <example>singine collibra contract progress --id c.contract.f47ac10b --json</example>
+      </command>
+
+    </commands>
+  </component>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- SERVER                                                                  -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <component name="server" help="id-gen HTTP API server (net/dmz modes, default port 7331)">
+    <description>
+      Starts the id-gen HTTP server (server/server.sh, backed by Common Lisp).
+      Two access modes: net (full) and dmz (restricted to four safe endpoints).
+    </description>
+    <implementation>id-gen/server/server.sh, id-gen/server/start.lisp</implementation>
+
+    <endpoints>
+      <endpoint method="GET" path="/health"              modes="net,dmz"/>
+      <endpoint method="GET" path="/api/id/gen"          modes="net,dmz"/>
+      <endpoint method="GET" path="/api/contracts/list"  modes="net,dmz"/>
+      <endpoint method="GET" path="/api/progress"        modes="net,dmz"/>
+      <endpoint method="*"   path="/*"                   modes="net" note="all other endpoints"/>
+    </endpoints>
+
+    <commands>
+
+      <command name="start" help="Start the server">
+        <options>
+          <option name="--port" type="int" default="7331"/>
+          <option name="--mode" choices="net,dmz" default="net"/>
+        </options>
+        <example>singine collibra server start --port 7331 --mode net</example>
+      </command>
+
+      <command name="dmz" help="Start in DMZ mode (restricted endpoints)">
+        <options>
+          <option name="--port" type="int" default="7331"/>
+        </options>
+        <example>singine collibra server dmz --port 7331</example>
+      </command>
+
+      <command name="stop"   help="Stop the server">
+        <example>singine collibra server stop</example>
+      </command>
+
+      <command name="status" help="Health check">
+        <example>singine collibra server status</example>
+      </command>
+
+    </commands>
+  </component>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- LIVE API (env / fetch / search)                                         -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <component name="live-api" help="Live Collibra REST API operations">
+    <description>
+      Direct REST operations against a live Collibra instance.
+      Requires COLLIBRA_BASE_URL, COLLIBRA_USERNAME / COLLIBRA_PASSWORD or COLLIBRA_TOKEN.
+    </description>
+    <implementation>singine/singine/collibra_rest.py</implementation>
+
+    <commands>
+
+      <command name="env" help="Validate Collibra environment configuration">
+        <example>singine collibra env</example>
+      </command>
+
+      <command name="fetch" help="Fetch a Collibra resource">
+        <subcommands>
+          <command name="community">
+            <options>
+              <option name="--name"  help="Filter by name prefix"/>
+              <option name="--limit" type="int" default="50"/>
+              <option name="--json"  type="flag" default="true"/>
+            </options>
+            <example>singine collibra fetch community --name "Data"</example>
+          </command>
+          <command name="domain">
+            <options>
+              <option name="--community" metavar="COMMUNITY_ID"/>
+              <option name="--type"      metavar="DOMAIN_TYPE"/>
+              <option name="--limit"     type="int" default="50"/>
+              <option name="--json"      type="flag" default="true"/>
+            </options>
+          </command>
+          <command name="asset-type">
+            <options>
+              <option name="--json" type="flag" default="true"/>
+            </options>
+          </command>
+          <command name="view">
+            <options>
+              <option name="--location" help="catalog|reports"/>
+              <option name="--limit"    type="int" default="100"/>
+              <option name="--json"     type="flag" default="true"/>
+            </options>
+          </command>
+          <command name="workflow">
+            <options>
+              <option name="--limit" type="int" default="50"/>
+              <option name="--json"  type="flag" default="true"/>
+            </options>
+          </command>
+        </subcommands>
+      </command>
+
+      <command name="search" help="Search Collibra assets by name">
+        <args>
+          <arg name="query" required="true"/>
+        </args>
+        <options>
+          <option name="--type"   metavar="ASSET_TYPE"/>
+          <option name="--domain" metavar="DOMAIN_ID"/>
+          <option name="--limit"  type="int" default="25"/>
+          <option name="--json"   type="flag" default="true"/>
+        </options>
+        <example>singine collibra search "Electricity Balancing" --type "Business Term"</example>
+      </command>
+
+    </commands>
+  </component>
+
+</singine-collibra-commands>

@@ -1,0 +1,112 @@
+.\" singine-collibra-id(1) — contract ID generation
+.TH SINGINE\-COLLIBRA\-ID 1 "2026-03-25" "singine" "Singine Manual"
+.
+.SH NAME
+singine\-collibra\-id \- Contract ID generation and namespace registry
+.
+.SH SYNOPSIS
+.B singine collibra id
+.I command
+.RI [ options ]
+.
+.SH DESCRIPTION
+Mints unique, namespace-scoped contract IDs and persists them as annotated git
+tags.  IDs follow the format
+.IR <ns>.<kind>.<uuid> ,
+e.g.
+.IR c.contract.f47ac10b-58cc-4372-a567-0e02b2c3d479 .
+Tags are stored as
+.IR id-gen/<id> .
+.
+.SH NAMESPACES
+.TP
+.B c
+Collibra namespace (privileged). Holds production Collibra IDs.
+.TP
+.B a
+.TQ
+.B b
+Reserved namespaces.
+.PP
+Priority order for conflict resolution:
+.B c
+>
+.B b
+>
+.B a
+> raw UUID.
+.
+.SH COMMANDS
+.TP
+.B singine collibra id gen [\-\-ns c|a|b] [\-\-project PROJECT] [\-\-kind KIND]
+Mint a new contract ID. Creates an annotated git tag and appends the ID to
+.IR namespaces/<ns>.registry .
+Default namespace:
+.BR c .
+Default kind:
+.BR contract .
+.TP
+.B singine collibra id gen\-topic [\-\-project PROJECT]
+Mint a topic ID for a project.
+.TP
+.B singine collibra id import \-\-uuid UUID \-\-kind KIND [\-\-project PROJECT]
+Register an existing Collibra UUID into the
+.B c
+namespace registry.
+.TP
+.B singine collibra id tags
+List all id-gen git tags.
+.TP
+.B singine collibra id push\-tags
+Push id-gen git tags to
+.IR origin .
+.TP
+.B singine collibra id detect\-conflicts
+Scan namespace registry files for git merge conflicts.
+.TP
+.B singine collibra id resolve\-conflicts [\-\-strategy STRATEGY]
+Auto-resolve namespace registry merge conflicts.
+.I STRATEGY
+is one of:
+.RS
+.TP
+.B COLLIBRA_WINS
+(default) Prefer
+.B c.*
+namespaced IDs.
+.TP
+.B OURS
+Keep the local version.
+.TP
+.B THEIRS
+Keep the incoming version.
+.TP
+.B ASK
+Prompt for each conflict.
+.TP
+.B MANUAL
+Exit without resolving; let the user edit manually.
+.RE
+.
+.SH FILES
+.TP
+.I id-gen/id_gen.sh
+Core ID minting and conflict resolution script.
+.TP
+.I id-gen/namespaces.sh
+Namespace registry management.
+.TP
+.I id-gen/namespaces/c.registry
+.TQ
+.I id-gen/namespaces/a.registry
+.TQ
+.I id-gen/namespaces/b.registry
+Plain-text registries. Never edit manually.
+.TP
+.I uniWork/id_gen.log
+Unified timestamped log of all ID operations.
+.
+.SH SEE ALSO
+.BR singine\-collibra (1),
+.BR singine\-collibra\-contract (1),
+.BR git\-tag (1)

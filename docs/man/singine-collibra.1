@@ -1,0 +1,115 @@
+.\" singine-collibra(1) — singine collibra command family
+.TH SINGINE\-COLLIBRA 1 "2026-03-25" "singine" "Singine Manual"
+.
+.SH NAME
+singine\-collibra \- Collibra governance CLI (edge, id, contract, server)
+.
+.SH SYNOPSIS
+.B singine collibra
+.I component
+.I command
+.RI [ subcommand ]
+.RI [ options ]
+.
+.SH DESCRIPTION
+.B singine collibra
+is the command family for all Collibra-specific operations in the singine CLI.
+It exposes the full lifecycle of the Collibra edge stack, contract ID generation,
+data contract management, ORM/SBVR semantic pipeline, and the id-gen HTTP server.
+.PP
+All heavy implementation lives in the
+.B collibra
+repository
+.RI ( ~/ws/git/github/sindoc/collibra ).
+The singine CLI acts as the execution gate and wraps results in structured
+envelopes.
+.
+.SH COMPONENTS
+.TP
+.B edge
+Collibra edge stack lifecycle — build, deploy, and manage the CDN, edge-site,
+and DGC containers.
+See
+.BR singine\-collibra\-edge (1).
+.TP
+.B id
+Contract ID generation and namespace registry.
+IDs are minted as annotated git tags in the format
+.IR id-gen/<ns>.<kind>.<uuid> .
+See
+.BR singine\-collibra\-id (1).
+.TP
+.B contract
+Data contract scaffolding, status management, and the 7-step ORM/SBVR pipeline.
+See
+.BR singine\-collibra\-contract (1).
+.TP
+.B server
+id-gen HTTP API server in net or DMZ mode.
+See
+.BR singine\-collibra\-server (1).
+.TP
+.B env
+Validate Collibra environment configuration
+.RB ( COLLIBRA_BASE_URL ,
+credentials).
+.TP
+.B fetch
+Fetch live Collibra resources.
+Subcommands:
+.BR community ,
+.BR domain ,
+.BR asset-type ,
+.BR view ,
+.BR workflow .
+.TP
+.B search
+Search Collibra assets by name.
+.
+.SH ENVIRONMENT
+.TP
+.B COLLIBRA_DIR
+Root of the collibra repository. Default:
+.IR ~/ws/git/github/sindoc/collibra .
+Used by singine to locate the
+.B singine_collibra
+Python package and id-gen scripts.
+.TP
+.B COLLIBRA_EDGE_DIR
+Root of the edge stack. Default:
+.IR $COLLIBRA_DIR/edge .
+.TP
+.B COLLIBRA_BASE_URL
+Base URL for live Collibra REST API calls
+.RB ( env ,
+.BR fetch ,
+.BR search ).
+.TP
+.B COLLIBRA_USERNAME
+.TQ
+.B COLLIBRA_PASSWORD
+Credentials for live Collibra API authentication.
+.
+.SH FILES
+.TP
+.I ~/ws/git/github/sindoc/collibra/singine_collibra/
+Core Python implementation package.
+.TP
+.I ~/ws/git/github/sindoc/collibra/id-gen/
+Bash-based contract ID and lifecycle scripts.
+.TP
+.I ~/ws/git/github/sindoc/collibra/edge/
+Docker edge stack.
+.TP
+.I ~/ws/git/github/sindoc/collibra/uniWork/CollibraBaseUrl
+Plain-text file containing the Collibra API base URL.
+.
+.SH SEE ALSO
+.BR singine\-collibra\-edge (1),
+.BR singine\-collibra\-id (1),
+.BR singine\-collibra\-contract (1),
+.BR singine\-collibra\-server (1),
+.BR singine (1)
+.
+.SH AUTHORS
+singine and the collibra tooling are maintained by sindoc.

@@ -1,0 +1,66 @@
+.\" singine-collibra-server(1) — id-gen HTTP API server
+.TH SINGINE\-COLLIBRA\-SERVER 1 "2026-03-25" "singine" "Singine Manual"
+.
+.SH NAME
+singine\-collibra\-server \- id-gen HTTP API server (net/dmz modes)
+.
+.SH SYNOPSIS
+.B singine collibra server
+.I command
+.RI [ options ]
+.
+.SH DESCRIPTION
+Starts and manages the id-gen HTTP API server defined in
+.IR id-gen/server/server.sh .
+Two access modes are supported:
+.TP
+.B net
+Full API access. All endpoints available.
+.TP
+.B dmz
+Restricted access. Only the four safe-to-expose endpoints are active:
+.BR /health ,
+.BR /api/id/gen ,
+.BR /api/contracts/list ,
+.BR /api/progress .
+.
+.SH COMMANDS
+.TP
+.B singine collibra server start [\-\-port PORT] [\-\-mode net|dmz]
+Start the server.
+Default port:
+.BR 7331 .
+Default mode:
+.BR net .
+.TP
+.B singine collibra server dmz [\-\-port PORT]
+Shorthand for
+.BR "start \-\-mode dmz" .
+.TP
+.B singine collibra server stop
+Stop the running server.
+.TP
+.B singine collibra server status
+Health check.
+.
+.SH ENDPOINTS
+.TS
+l l l.
+Endpoint	net	dmz
+GET /health	✓	✓
+GET /api/id/gen	✓	✓
+GET /api/contracts/list	✓	✓
+GET /api/progress	✓	✓
+(all other endpoints)	✓	✗
+.TE
+.
+.SH FILES
+.TP
+.I id-gen/server/server.sh
+Startup wrapper (auto-detects Lisp runtime: SBCL / CLISP / ECL / Guile).
+.TP
+.I id-gen/server/start.lisp
+Common Lisp HTTP API implementation.
+.
+.SH SEE ALSO
+.BR singine\-collibra (1)
