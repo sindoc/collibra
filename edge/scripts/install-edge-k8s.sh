@@ -144,9 +144,25 @@ step "Repo-creds secret (collibra-edge-repo-creds)"
 
 REPO_CREDS_FILE="${INSTALLER_DIR}/resources/manifests/sc-collibra-edge-repo-creds.yaml"
 if [ -f "${REPO_CREDS_FILE}" ]; then
+  REPO_CREDS_OK=""
   if kubectl get secret collibra-edge-repo-creds -n "${NAMESPACE}" >/dev/null 2>&1; then
-    green "  collibra-edge-repo-creds already exists"
-  else
+    SECRET_TYPE=$(kubectl get secret collibra-edge-repo-creds -n "${NAMESPACE}" -o jsonpath='{.type}' 2>/dev/null || true)
+    USERNAME_KEY=$(kubectl get secret collibra-edge-repo-creds -n "${NAMESPACE}" -o jsonpath='{.data.username}' 2>/dev/null || true)
+    PASSWORD_KEY=$(kubectl get secret collibra-edge-repo-creds -n "${NAMESPACE}" -o jsonpath='{.data.password}' 2>/dev/null || true)
+    if [ "${SECRET_TYPE}" = "Opaque" ] && [ -n "${USERNAME_KEY}" ] && [ -n "${PASSWORD_KEY}" ]; then
+      REPO_CREDS_OK=1
+      green "  collibra-edge-repo-creds already exists"
+    else
+      echo "  existing secret has incompatible shape (${SECRET_TYPE:-unknown}) — recreating"
+      if [ -n "$DRY_RUN" ]; then
+        echo "  [dry-run] kubectl delete secret collibra-edge-repo-creds -n ${NAMESPACE}"
+      else
+        kubectl delete secret collibra-edge-repo-creds -n "${NAMESPACE}"
+      fi
+    fi
+  fi
+
+  if [ -z "${REPO_CREDS_OK}" ]; then
     [ -n "$DRY_RUN" ] \
       && echo "  [dry-run] kubectl apply -f sc-collibra-edge-repo-creds.yaml" \
       || kubectl apply -f "${REPO_CREDS_FILE}" -n "${NAMESPACE}"
