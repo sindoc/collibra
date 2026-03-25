@@ -1,0 +1,137 @@
+.\" singine-collibra-contract(1) — data contract lifecycle
+.TH SINGINE\-COLLIBRA\-CONTRACT 1 "2026-03-25" "singine" "Singine Manual"
+.
+.SH NAME
+singine\-collibra\-contract \- Data contract scaffolding, lifecycle, and ORM/SBVR pipeline
+.
+.SH SYNOPSIS
+.B singine collibra contract
+.I command
+.RI [ options ]
+.
+.SH DESCRIPTION
+Manages data contracts stored as JSON files in
+.IR id-gen/contracts/store/ .
+Each contract tracks a 7-step ORM/SBVR semantic transformation pipeline
+from
+.B INIT
+to
+.BR CONTRACT .
+.
+.SH CONTRACT KINDS
+.BR DataContract ,
+.BR UseCaseContract ,
+.BR ServiceContract ,
+.B GovernanceContract
+.
+.SH CONTRACT STATUSES
+.TP
+.B DRAFT
+Initial state. Pipeline steps 0–3.
+.TP
+.B PENDING_APPROVAL
+Steps 4–6. Awaiting governance review.
+.TP
+.B APPROVED
+Step 7. Contract finalised.
+.TP
+.B REJECTED
+.TQ
+.B ACTIVE
+.TQ
+.B DEPRECATED
+Additional lifecycle states.
+.
+.SH PIPELINE STEPS
+.TS
+l l l l.
+Step	Label	Status	Progress
+0	INIT	DRAFT	0%
+1	EXTRACT	DRAFT	14%
+2	CLASSIFY	DRAFT	29%
+3	RELATE	DRAFT	43%
+4	CONSTRAIN	PENDING_APPROVAL	57%
+5	VERBALIZE	PENDING_APPROVAL	71%
+6	ALIGN	PENDING_APPROVAL	86%
+7	CONTRACT	APPROVED	100%
+.TE
+.
+.SH COMMANDS
+.TP
+.B singine collibra contract new [\-\-project PROJECT] [\-\-kind KIND]
+Scaffold a new data contract JSON file and initialise pipeline at step 0 (INIT).
+.TP
+.B singine collibra contract list
+List all contracts in
+.IR id-gen/contracts/store/ .
+.TP
+.B singine collibra contract status CONTRACT_ID STATUS
+Update a contract's status.
+.TP
+.B singine collibra contract pipeline [\-\-id CONTRACT_ID]
+Run the full 7-step ORM/SBVR pipeline sequentially for a contract.
+.TP
+.B singine collibra contract step N [\-\-id CONTRACT_ID]
+Run a single pipeline step (1–7).
+.TP
+.B singine collibra contract advance [\-\-id CONTRACT_ID]
+Advance the contract to the next pipeline step.
+.TP
+.B singine collibra contract progress [\-\-id CONTRACT_ID] [\-\-all] [\-\-json]
+Show pipeline progress.
+.B \-\-all
+shows all contracts.
+.B \-\-json
+emits machine-readable output.
+.
+.SH PIPELINE DETAILS
+.TP
+.B Step 1: EXTRACT
+Enumerate Collibra asset types from the governance reference data.
+.TP
+.B Step 2: CLASSIFY
+Map asset types to SBVR Concept Types.
+.TP
+.B Step 3: RELATE
+Identify ORM binary fact types between concepts.
+.TP
+.B Step 4: CONSTRAIN
+Apply uniqueness and mandatory constraints.
+.TP
+.B Step 5: VERBALIZE
+Express business rules in SBVR natural-language form.
+.TP
+.B Step 6: ALIGN
+Cross-reference vocabulary against SKOS, DCAT, ODRL, PROV-O, and OWL.
+.TP
+.B Step 7: CONTRACT
+Finalise the contract. IDs are tracked in
+.B c.*
+namespace.
+.
+.SH FILES
+.TP
+.I id-gen/collibra/metamodel_7step.sh
+7-step pipeline implementation.
+.TP
+.I id-gen/contracts/generate_contract.sh
+Contract scaffolding.
+.TP
+.I id-gen/contracts/workflow_tracker.sh
+Step advancement and progress tracking.
+.TP
+.I id-gen/contracts/contract_schema.json
+JSON Schema (draft-07) that all contracts must satisfy.
+.TP
+.I id-gen/contracts/store/
+Generated contract JSON files.
+.TP
+.I id-gen/governance/reference_data.json
+Enums: kinds, statuses, steps, SBVR/SKOS/DCAT/ODRL/PROV/OWL mappings.
+.TP
+.I id-gen/governance/vocab_alignment.json
+Cross-ontology vocabulary mappings.
+.
+.SH SEE ALSO
+.BR singine\-collibra (1),
+.BR singine\-collibra\-id (1)

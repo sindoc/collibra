@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  singine-collibra-model.xml
+  Domain model for the collibra repository's data objects.
+
+  Follows the Elia/Collibra XML modelling conventions: each domain object
+  includes a Collibra catalog reference, business context, and traceability
+  to the implementation layer.
+-->
+<collibra-governance-model version="1.0" generated="2026-03-25">
+
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- CONTRACT ID MODEL                                                       -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <domain id="contract-id-management">
+    <name>Contract ID Management</name>
+    <description>
+      Namespace-scoped contract ID generation and git-tag persistence.
+      IDs are the primary keys linking contracts, Collibra assets, and pipeline
+      executions.
+    </description>
+
+    <business-context>
+      <capability>Governance Identification</capability>
+      <process>Contract ID Minting</process>
+      <owner>Collibra Governance Team</owner>
+    </business-context>
+
+    <data-objects>
+
+      <data-object id="contract-id">
+        <name>Contract ID</name>
+        <format>&lt;namespace&gt;.&lt;kind&gt;.&lt;uuid&gt;</format>
+        <example>c.contract.f47ac10b-58cc-4372-a567-0e02b2c3d479</example>
+        <persistence>annotated git tag: id-gen/&lt;id&gt;</persistence>
+        <implementation>id-gen/id_gen.sh</implementation>
+        <collibra-ref assetType="Data Element" name="Contract ID"/>
+      </data-object>
+
+      <data-object id="namespace-registry">
+        <name>Namespace Registry</name>
+        <description>Plain-text append-only log of all minted IDs per namespace.</description>
+        <namespaces>
+          <namespace prefix="c" file="id-gen/namespaces/c.registry" priority="1"/>
+          <namespace prefix="a" file="id-gen/namespaces/a.registry" priority="3"/>
+          <namespace prefix="b" file="id-gen/namespaces/b.registry" priority="2"/>
+        </namespaces>
+        <constraint>Never edit registry files manually. Use singine collibra id gen.</constraint>
+        <implementation>id-gen/namespaces.sh</implementation>
+      </data-object>
+
+    </data-objects>
+  </domain>
+
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- DATA CONTRACT MODEL                                                     -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <domain id="data-contract">
+    <name>Data Contract</name>
+    <description>
+      Formal data contract tracking a 7-step ORM/SBVR semantic transformation
+      pipeline from INIT to CONTRACT. Validated against JSON Schema draft-07.
+    </description>
+
+    <business-context>
+      <capability>Data Governance</capability>
+      <process>Contract Lifecycle Management</process>
+      <owner>Data Governance Team</owner>
+    </business-context>
+
+    <schema-fields required="id,kind,status,created_at,project,topic_id">
+      <field name="id"          type="string" format="&lt;ns&gt;.contract.&lt;uuid&gt;"/>
+      <field name="kind"        type="enum"   values="DataContract,UseCaseContract,ServiceContract,GovernanceContract"/>
+      <field name="status"      type="enum"   values="DRAFT,PENDING_APPROVAL,APPROVED,REJECTED,ACTIVE,DEPRECATED"/>
+      <field name="created_at"  type="iso8601"/>
+      <field name="project"     type="string"/>
+      <field name="topic_id"    type="string"/>
+    </schema-fields>
+
+    <pipeline>
+      <step n="0" label="INIT"       contract-status="DRAFT"            progress-pct="0">
+        <description>Contract scaffolded. Pipeline initialised.</description>
+        <implementation>id-gen/contracts/generate_contract.sh</implementation>
+      </step>
+      <step n="1" label="EXTRACT"    contract-status="DRAFT"            progress-pct="14">
+        <description>Collibra asset types enumerated from governance reference data.</description>
+        <implementation>id-gen/collibra/metamodel_7step.sh step1</implementation>
+      </step>
+      <step n="2" label="CLASSIFY"   contract-status="DRAFT"            progress-pct="29">
+        <description>Asset types mapped to SBVR Concept Types.</description>
+        <implementation>id-gen/collibra/metamodel_7step.sh step2</implementation>
+      </step>
+      <step n="3" label="RELATE"     contract-status="DRAFT"            progress-pct="43">
+        <description>ORM binary fact types identified between concepts.</description>
+        <implementation>id-gen/collibra/metamodel_7step.sh step3</implementation>
+      </step>
+      <step n="4" label="CONSTRAIN"  contract-status="PENDING_APPROVAL" progress-pct="57">
+        <description>Uniqueness and mandatory constraints applied.</description>
+        <implementation>id-gen/collibra/metamodel_7step.sh step4</implementation>
+      </step>
+      <step n="5" label="VERBALIZE"  contract-status="PENDING_APPROVAL" progress-pct="71">
+        <description>Business rules expressed in SBVR natural-language form.</description>
+        <implementation>id-gen/collibra/metamodel_7step.sh step5</implementation>
+      </step>
+      <step n="6" label="ALIGN"      contract-status="PENDING_APPROVAL" progress-pct="86">
+        <description>Vocabulary cross-referenced against SKOS, DCAT, ODRL, PROV-O, OWL.</description>
+        <implementation>id-gen/collibra/metamodel_7step.sh step6</implementation>
+      </step>
+      <step n="7" label="CONTRACT"   contract-status="APPROVED"         progress-pct="100">
+        <description>Contract finalised. IDs tracked in c.* namespace.</description>
+        <implementation>id-gen/collibra/metamodel_7step.sh step7</implementation>
+      </step>
+    </pipeline>
+
+    <storage>
+      <location>id-gen/contracts/store/&lt;id&gt;.json</location>
+      <schema>id-gen/contracts/contract_schema.json (JSON Schema draft-07)</schema>
+    </storage>
+
+    <collibra-catalog>
+      <asset assetType="Data Contract" collibraId="" name="Data Contract"/>
+      <asset assetType="Business Process" collibraId="" name="Contract Lifecycle Management"/>
+    </collibra-catalog>
+  </domain>
+
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- EDGE STACK MODEL                                                        -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <domain id="edge-stack">
+    <name>Collibra Edge Stack</name>
+    <description>
+      Docker Compose-based Collibra Edge deployment. Three services behind nginx CDN.
+      Supports dev (mock), cloud (SaaS), production (on-prem), and Kubernetes modes.
+    </description>
+
+    <business-context>
+      <capability>Edge Connectivity</capability>
+      <process>Edge Site Deployment</process>
+      <owner>Platform Engineering</owner>
+    </business-context>
+
+    <services>
+      <service name="cdn"            image="singine-cdn"            port="443"  protocol="HTTPS">
+        <description>nginx reverse proxy with TLS termination and upstream routing.</description>
+        <routes>
+          <route path="/api/edge/*"         upstream="edge-site"     cache="no"/>
+          <route path="/site/*"             upstream="edge-site"     cache="30m"/>
+          <route path="/rest/*"             upstream="collibra-edge" cache="no"/>
+          <route path="/graphql/*"          upstream="collibra-edge" cache="no"/>
+          <route path="/health"             upstream="edge-site"     cache="no"/>
+          <route path="/"                   upstream="edge-site"     cache="10m"/>
+        </routes>
+      </service>
+      <service name="edge-site"      image="singine-edge-site"      port="8080" protocol="HTTP">
+        <description>EdgeSiteServerMain.java — zero-dependency JDK 11 HTTP server.</description>
+        <endpoints>
+          <endpoint method="GET"  path="/health"/>
+          <endpoint method="GET"  path="/api/edge/v1/status"/>
+          <endpoint method="POST" path="/api/edge/v1/register"/>
+          <endpoint method="GET"  path="/api/edge/v1/capabilities"/>
+          <endpoint method="POST" path="/api/edge/v1/capabilities/{type}/invoke"/>
+          <endpoint method="GET"  path="/site/*"/>
+        </endpoints>
+        <capabilities>site,connect,catalog,lineage,profiling,workflow</capabilities>
+      </service>
+      <service name="collibra-edge"  image="singine-collibra-edge"  port="7080" protocol="HTTP">
+        <description>Collibra DGC edge node — real JAR or Python mock.</description>
+        <modes>
+          <mode name="dev"        backend="mock_dgc.py"/>
+          <mode name="cloud"      backend="https://lutino.collibra.com"/>
+          <mode name="production" backend="collibra-edge.jar"/>
+        </modes>
+      </service>
+    </services>
+
+    <mock-data>
+      <communities count="3">
+        <community id="comm-001" name="Data Governance"/>
+        <community id="comm-002" name="AI Platform"/>
+        <community id="comm-003" name="Lutino.io Platform"/>
+      </communities>
+      <assets count="11">
+        <asset-types>
+          <type name="Business Term"        count="4"/>
+          <type name="Business Capability"  count="3"/>
+          <type name="Business Process"     count="2"/>
+          <type name="Data Category"        count="2"/>
+          <type name="Policy"               count="1"/>
+        </asset-types>
+      </assets>
+    </mock-data>
+
+    <collibra-catalog>
+      <asset assetType="Business Capability" collibraId="" name="Edge Connectivity"/>
+      <asset assetType="Business Process"    collibraId="" name="Edge Site Deployment"/>
+    </collibra-catalog>
+  </domain>
+
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- VOCABULARY ALIGNMENT                                                    -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <vocabulary-alignment source="id-gen/governance/vocab_alignment.json">
+    <ontology prefix="skos"  uri="http://www.w3.org/2004/02/skos/core#"     use="Concept hierarchies, thesaurus"/>
+    <ontology prefix="dcat"  uri="http://www.w3.org/ns/dcat#"               use="Data catalog, dataset descriptions"/>
+    <ontology prefix="odrl"  uri="http://www.w3.org/ns/odrl/2/"             use="Data usage policies"/>
+    <ontology prefix="prov"  uri="http://www.w3.org/ns/prov#"               use="Provenance"/>
+    <ontology prefix="owl"   uri="http://www.w3.org/2002/07/owl#"           use="Ontological grounding"/>
+    <ontology prefix="sbvr"  uri="http://www.omg.org/spec/SBVR/20181101/"   use="Business vocabulary and rules (OMG)"/>
+  </vocabulary-alignment>
+
+</collibra-governance-model>
