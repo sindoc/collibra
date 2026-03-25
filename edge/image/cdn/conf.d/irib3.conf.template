@@ -1,0 +1,88 @@
+# conf.d/irib3.conf.template — IRIB3 live TV stream proxy + player
+#
+# Rendered at container startup by entrypoint.sh via envsubst.
+# Variables:
+#   IRIB3_ORIGIN_HOST  — HLS origin hostname  (default: lenz.splus.ir)
+#   IRIB3_CDN_HOST     — this CDN's public hostname (default: tv.edge.lutino.io)
+#
+# Player URL:  https://${IRIB3_CDN_HOST}/
+# HLS proxy:   https://${IRIB3_CDN_HOST}/<path>.m3u8  and  /*.ts
+#
+# Uses `set $var` + `proxy_pass $var` so nginx resolves the origin hostname
+# at request time rather than at startup (avoids startup DNS failure).
+
+server {
+    listen 443 ssl http2;
+    server_name ${IRIB3_CDN_HOST};
+
+    ssl_certificate     /opt/edge/cdn/certs/server.crt;
+    ssl_certificate_key /opt/edge/cdn/certs/server.key;
+
+    add_header Strict-Transport-Security "max-age=31536000" always;
+
+    # Resolve external hostnames at request time (not at nginx startup)
+    resolver 8.8.8.8 8.8.4.4 valid=30s ipv6=off;
+
+    # Origin variable — defers DNS resolution to request time
+    set $irib3_origin "https://${IRIB3_ORIGIN_HOST}";
+
+    # ── Player HTML ───────────────────────────────────────────────────────────
+    location = / {
+        root  /opt/edge/cdn/irib3;
+        index player.html;
+        add_header Cache-Control "no-cache";
+    }
+
+    location = /player.html {
+        root  /opt/edge/cdn/irib3;
+        add_header Cache-Control "no-cache";
+    }
+
+    # ── HLS playlist (.m3u8) — very short TTL; rewrite origin URLs ────────────
+    location ~ \.m3u8$ {
+        proxy_pass         $irib3_origin;
+        proxy_ssl_name     ${IRIB3_ORIGIN_HOST};
+        proxy_ssl_server_name on;
+        proxy_set_header   Host ${IRIB3_ORIGIN_HOST};
+
+        proxy_set_header   Accept-Encoding "";
+        sub_filter         "https://${IRIB3_ORIGIN_HOST}" "https://${IRIB3_CDN_HOST}";
+        sub_filter_once    off;
+        sub_filter_types   application/vnd.apple.mpegurl application/x-mpegurl text/plain;
+
+        proxy_cache        cdn_cache;
+        proxy_cache_valid  200  4s;
+        proxy_cache_valid  any  1s;
+        proxy_cache_key    "$uri";
+        add_header         X-Cache-Status $upstream_cache_status;
+        add_header         Access-Control-Allow-Origin "*";
+        add_header         Cache-Control "no-store, max-age=0";
+    }
+
+    # ── HLS segments (.ts) — immutable; cache aggressively ───────────────────
+    location ~ \.ts$ {
+        proxy_pass         $irib3_origin;
+        proxy_ssl_name     ${IRIB3_ORIGIN_HOST};
+        proxy_ssl_server_name on;
+        proxy_set_header   Host ${IRIB3_ORIGIN_HOST};
+
+        proxy_cache        cdn_cache;
+        proxy_cache_valid  200  2m;
+        proxy_cache_valid  any  10s;
+        proxy_cache_key    "$uri";
+        add_header         X-Cache-Status $upstream_cache_status;
+        add_header         Access-Control-Allow-Origin "*";
+        add_header         Cache-Control "public, max-age=120";
+    }
+
+    # ── Everything else from origin (key/index files, etc.) ──────────────────
+    location / {
+        proxy_pass         $irib3_origin;
+        proxy_ssl_name     ${IRIB3_ORIGIN_HOST};
+        proxy_ssl_server_name on;
+        proxy_set_header   Host ${IRIB3_ORIGIN_HOST};
+        proxy_cache        cdn_cache;
+        proxy_cache_valid  200 10s;
+        add_header         Access-Control-Allow-Origin "*";
+    }
+}

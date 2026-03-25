@@ -1,0 +1,4 @@
+# Exclude cloud-mode conf templates from the image.
+# These are volume-mounted at runtime by docker-compose.cloud.yml;
+# baking them in causes duplicate nginx upstream declarations.
+conf.d/*.cloud.conf

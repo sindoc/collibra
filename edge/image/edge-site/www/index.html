@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Collibra Edge Site</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+           background: #f5f5f5; color: #333; margin: 0; padding: 2rem; }
+    h1   { color: #1a1a2e; }
+    .card { background: #fff; border-radius: 8px; padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,.08); max-width: 600px; }
+    .status { display: inline-block; padding: .25rem .75rem; border-radius: 12px;
+              font-size: .85rem; font-weight: 600;
+              background: #e8f5e9; color: #2e7d32; }
+    a { color: #1565c0; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Collibra Edge Site</h1>
+    <p><span class="status">RUNNING</span></p>
+    <p>This edge site is managed by the <strong>sindoc collibra edge stack</strong>.</p>
+    <ul>
+      <li><a href="/health">Health check</a> — <code>GET /health</code></li>
+      <li><a href="/api/edge/v1/status">Site status</a> — <code>GET /api/edge/v1/status</code></li>
+      <li><a href="/api/edge/v1/capabilities">Capabilities</a> — <code>GET /api/edge/v1/capabilities</code></li>
+    </ul>
+    <p style="font-size:.8rem;color:#888;">
+      Replace this file with your site content at
+      <code>/opt/edge/site/www/</code> or mount a volume to that path.
+    </p>
+  </div>
+</body>
+</html>

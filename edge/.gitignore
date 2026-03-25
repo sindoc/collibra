@@ -1,0 +1,20 @@
+# Edge stack — git ignore
+.env
+certs/
+image/collibra-edge/collibra-edge.jar
+image/edge-site/edge-site-server.jar
+java/build/
+java/.gradle/
+agent/.venv/
+agent/output/
+agent/__pycache__/
+
+# Build artifacts
+image/edge-site/server/build/
+image/edge-site/server/*.jar
+
+# Claude Code local settings (may contain allowed-command tokens)
+.claude/
+
+# Collibra Edge installer bundle (contains embedded site credentials — never commit)
+installer/

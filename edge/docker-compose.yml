@@ -1,0 +1,150 @@
+# docker-compose.yml — Collibra edge stack (local development / smoke-test)
+#
+# Services:
+#   cdn              nginx CDN / TLS proxy           → :443 / :80
+#   edge-site        Collibra Edge Site server       → internal :8080
+#   collibra-edge    Collibra DGC edge node          → internal :7080
+#
+# Usage:
+#   docker compose up            # start the stack
+#   docker compose up --build    # rebuild images first
+#   docker compose logs -f       # tail logs
+#   docker compose down          # stop and remove containers
+#
+# Required before first run:
+#   1. Place the Collibra edge JAR:
+#        image/collibra-edge/collibra-edge.jar
+#   2. Place the edge site server JAR (built from edge/java/):
+#        image/edge-site/edge-site-server.jar
+#   3. Place TLS certificates:
+#        certs/server.crt
+#        certs/server.key
+#   4. Copy and edit the env file:
+#        cp .env.example .env
+
+version: "3.8"
+
+networks:
+  edge-net:
+    driver: bridge
+
+volumes:
+  collibra-data:
+  collibra-logs:
+  edge-site-logs:
+  cdn-cache:
+  cdn-logs:
+
+services:
+
+  # ── CentOS 7 LTS base (build-only, not run directly) ─────────────────────
+  base:
+    build:
+      context: image/base
+      dockerfile: Dockerfile
+    image: sindoc-collibra-edge-base:local
+    profiles:
+      - build-only
+
+  # ── Collibra Edge Site server ─────────────────────────────────────────────
+  edge-site:
+    build:
+      context: image/edge-site
+      dockerfile: Dockerfile
+      args:
+        REGISTRY: ""
+        BASE_TAG: local
+    image: sindoc-collibra-edge-site:local
+    depends_on:
+      - base
+    environment:
+      COLLIBRA_EDGE_HOSTNAME:  ${COLLIBRA_EDGE_HOSTNAME:-edge.local}
+      COLLIBRA_DGC_URL:        ${COLLIBRA_DGC_URL:-https://dgc.example.com}
+      COLLIBRA_EDGE_SITE_ID:   ${COLLIBRA_EDGE_SITE_ID:-edge-site-local}
+      COLLIBRA_EDGE_SITE_NAME: ${COLLIBRA_EDGE_SITE_NAME:-Local Edge Site}
+      COLLIBRA_EDGE_REG_KEY:   ${COLLIBRA_EDGE_REG_KEY:-placeholder-key}
+      EDGE_SITE_HTTP_PORT:     "8080"
+      EDGE_SITE_CAPABILITIES:  ${EDGE_SITE_CAPABILITIES:-site,connect,catalog}
+      JAVA_OPTS: >-
+        -Xms512m -Xmx1g
+        -XX:+UseG1GC
+        -XX:MaxGCPauseMillis=100
+        -Djava.awt.headless=true
+    volumes:
+      - edge-site-logs:/opt/edge/site/logs
+      # Mount custom web content here:
+      # - ./site-content:/opt/edge/site/www:ro
+    networks:
+      - edge-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # ── Collibra DGC edge node ────────────────────────────────────────────────
+  collibra-edge:
+    build:
+      context: image/collibra-edge
+      dockerfile: Dockerfile
+      args:
+        REGISTRY: ""
+        BASE_TAG: local
+    image: sindoc-collibra-edge:local
+    depends_on:
+      - base
+    environment:
+      COLLIBRA_EDGE_HOSTNAME: ${COLLIBRA_EDGE_HOSTNAME:-edge.local}
+      COLLIBRA_DGC_URL:       ${COLLIBRA_DGC_URL:-https://dgc.example.com}
+      COLLIBRA_HTTP_PORT:     "7080"
+      COLLIBRA_HTTPS_PORT:    "7443"
+      JAVA_OPTS: >-
+        -Xms2g -Xmx2g
+        -XX:+UseG1GC
+        -XX:MaxGCPauseMillis=200
+        -Djava.awt.headless=true
+    volumes:
+      - collibra-data:/opt/edge/collibra/data
+      - collibra-logs:/opt/edge/collibra/logs
+    networks:
+      - edge-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:7080/rest/2.0/ping"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 120s
+
+  # ── nginx CDN / TLS proxy ─────────────────────────────────────────────────
+  cdn:
+    build:
+      context: image/cdn
+      dockerfile: Dockerfile
+      args:
+        REGISTRY: ""
+        BASE_TAG: local
+    image: sindoc-collibra-cdn:local
+    depends_on:
+      edge-site:
+        condition: service_healthy
+      collibra-edge:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./certs:/opt/edge/cdn/certs:ro
+      - cdn-cache:/opt/edge/cdn/cache
+      - cdn-logs:/opt/edge/cdn/logs
+    networks:
+      - edge-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

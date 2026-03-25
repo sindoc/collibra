@@ -1,0 +1,192 @@
+/**
+ * build.gradle — Collibra Edge Site Java interface layer
+ *
+ * Produces:
+ *   - edge-site-api.jar        (interfaces only, no implementation)
+ *   - edge-site-api-javadoc.jar (HTML Javadoc)
+ *   - edge-site-api-sources.jar
+ *   - build/docs/xmldoc/edge-site-api.xml  (XML Javadoc via xmldoclet)
+ *
+ * Tasks:
+ *   ./gradlew javadoc     — standard HTML Javadoc → build/docs/javadoc/
+ *   ./gradlew xmldoc      — XML Javadoc           → build/docs/xmldoc/
+ *   ./gradlew alldoc      — both HTML and XML
+ *   ./gradlew jar         — compile + package
+ *   ./gradlew build       — compile + test + all docs
+ *
+ * This module is intentionally implementation-free.  It defines the contract
+ * that all edge site implementations must satisfy.  Add it as a compile-time
+ * dependency; wire an implementation (e.g. edge-site-server) at runtime.
+ *
+ * Collibra Maven repository credentials:
+ *   collibraMavenUser=  (gradle.properties or env COLLIBRA_MAVEN_USER)
+ *   collibraMavenPass=  (gradle.properties or env COLLIBRA_MAVEN_PASS)
+ */
+
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'jacoco'
+}
+
+// ── xmldoclet configuration ───────────────────────────────────────────────────
+// xml-doclet produces a machine-readable XML Javadoc alongside the standard
+// HTML output.  Used by documentation pipelines and cross-referencing tools.
+// Artifact: com.github.markusbernhardt:xml-doclet (fat jar, includes all deps)
+configurations {
+    xmlDoclet
+}
+
+group   = 'io.sindoc.collibra'
+version = '2026.3'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+    withJavadocJar()
+    withSourcesJar()
+}
+
+repositories {
+    mavenCentral()
+
+    // Collibra product Maven repository — credentials required
+    // Request access at: https://productresources.collibra.com
+    // Only added when credentials are available (not needed for xmldoclet or jsr305).
+    def collibraUser = findProperty('collibraMavenUser') ?: System.getenv('COLLIBRA_MAVEN_USER')
+    def collibraPass = findProperty('collibraMavenPass') ?: System.getenv('COLLIBRA_MAVEN_PASS')
+    if (collibraUser && collibraPass) {
+        maven {
+            url 'https://productresources.collibra.com/maven/'
+            credentials {
+                username = collibraUser
+                password = collibraPass
+            }
+        }
+    }
+}
+
+ext {
+    collibraVersion  = '2026.3'
+    xmlDocletVersion = '1.0.5'
+}
+
+dependencies {
+    // ── API module only; no implementation dependencies ──────────────────────
+    // The Collibra SDK types are referenced in comments and Javadoc only.
+    // Implementations will depend on the SDK directly.
+
+    // JSR-305 annotations (@Nullable, @Nonnull) — optional, for IDE support
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+
+    // xml-doclet: 'jar-with-dependencies' bundles all transitive dependencies
+    xmlDoclet "com.github.markusbernhardt:xml-doclet:${xmlDocletVersion}:jar-with-dependencies"
+}
+
+// ── Standard HTML Javadoc ─────────────────────────────────────────────────────
+javadoc {
+    options {
+        encoding      = 'UTF-8'
+        charSet       = 'UTF-8'
+        author        = true
+        version       = true
+        windowTitle   = 'Collibra Edge Site API'
+        docTitle      = 'Collibra Edge Site Java Interface Layer'
+        header        = '<b>sindoc · collibra-edge-site-api</b>'
+        bottom        = 'Copyright &copy; 2026 sindoc.io. All rights reserved.'
+        addBooleanOption('linksource', true)
+        addStringOption('Xdoclint:none', '-quiet')
+        addBooleanOption('notimestamp', true)
+    }
+    source = sourceSets.main.allJava
+}
+
+// ── XML Javadoc (xmldoclet) ───────────────────────────────────────────────────
+// Produces build/docs/xmldoc/edge-site-api.xml — a structured XML
+// representation of all packages, interfaces, methods, and Javadoc comments.
+// Consumed by documentation generators, API diff tools, and search indexes.
+//
+// NOTE: xml-doclet 1.0.5 uses the legacy com.sun.javadoc.Doclet API which was
+// removed in Java 13.  This task runs only when JAVA_HOME points to Java 11.
+// With Java 17+ the task is skipped gracefully (build still succeeds).
+// To run explicitly on Java 11:
+//   JAVA_HOME=/path/to/jdk-11 ./gradlew xmldoc
+task xmldoc(type: Javadoc) {
+    group       = 'documentation'
+    description = 'Generate XML Javadoc using xmldoclet → build/docs/xmldoc/ (requires Java 11)'
+
+    source           = sourceSets.main.allJava
+    classpath        = sourceSets.main.compileClasspath
+    destinationDir   = file("${buildDir}/docs/xmldoc")
+
+    options.docletpath = configurations.xmlDoclet.files.toList()
+    options.doclet     = 'com.github.markusbernhardt.xmldoclet.XmlDoclet'
+
+    // xmldoclet options: output filename
+    options.addStringOption('filename', 'edge-site-api.xml')
+    options.addStringOption('Xdoclint:none', '-quiet')
+
+    // Ensure source is compiled before generating docs
+    dependsOn compileJava
+
+    // Skip gracefully if JDK is too new (old Doclet API removed in Java 13)
+    onlyIf {
+        def javaVersion = JavaVersion.current()
+        if (!javaVersion.isJava11() && !javaVersion.isJava12()) {
+            logger.lifecycle("xmldoc: skipped — xml-doclet requires Java ≤ 12 (current: ${javaVersion})")
+            logger.lifecycle("xmldoc: to run, set JAVA_HOME to a JDK 11 installation")
+            return false
+        }
+        return true
+    }
+}
+
+// ── alldoc: HTML + XML in one shot ───────────────────────────────────────────
+task alldoc {
+    group       = 'documentation'
+    description = 'Generate both HTML Javadoc and XML Javadoc'
+    dependsOn javadoc, xmldoc
+}
+
+// ── Publishing ────────────────────────────────────────────────────────────────
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = 'edge-site-api'
+            from components.java
+
+            // Attach the XML doc as an additional artifact
+            artifact(xmldoc.destinationDir) {
+                classifier = 'xmldoc'
+                extension  = 'xml'
+                builtBy xmldoc
+            }
+
+            pom {
+                name        = 'Collibra Edge Site API'
+                description = 'Java interface layer for Collibra-compatible edge site hosting and K8s installer lifecycle'
+                url         = 'https://github.com/sindoc/collibra'
+                licenses {
+                    license {
+                        name = 'Proprietary'
+                        url  = 'https://sindoc.io/licenses'
+                    }
+                }
+                developers {
+                    developer {
+                        id    = 'skh'
+                        name  = 'skh'
+                        email = 'skh@sindoc.io'
+                    }
+                }
+            }
+        }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+// Ensure xmldoc runs as part of a full build
+build.dependsOn alldoc
