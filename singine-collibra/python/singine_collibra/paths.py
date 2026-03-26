@@ -1,4 +1,8 @@
-"""Default paths to collibra repo components."""
+"""Default paths to Collibra repo components.
+
+The Python package lives under ``singine-collibra/python/`` but the repository
+root remains the canonical ``COLLIBRA_DIR`` anchor.
+"""
 import os
 from pathlib import Path
 
