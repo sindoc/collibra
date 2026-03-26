@@ -1,8 +1,8 @@
 .\" singine-collibra(1) — singine collibra command family
-.TH SINGINE\-COLLIBRA 1 "2026-03-25" "singine" "Singine Manual"
+.TH SINGINE\-COLLIBRA 1 "2026-03-26" "singine" "Singine Manual"
 .
 .SH NAME
-singine\-collibra \- Collibra governance CLI (edge, id, contract, server)
+singine\-collibra \- Collibra governance CLI (edge, id, contract, io, server)
 .
 .SH SYNOPSIS
 .B singine collibra
@@ -15,7 +15,8 @@ singine\-collibra \- Collibra governance CLI (edge, id, contract, server)
 .B singine collibra
 is the command family for all Collibra-specific operations in the singine CLI.
 It exposes the full lifecycle of the Collibra edge stack, contract ID generation,
-data contract management, ORM/SBVR semantic pipeline, and the id-gen HTTP server.
+data contract management, governed I/O through Collibra CHIP, ORM/SBVR semantic
+pipeline, and the id-gen HTTP server.
 .PP
 All heavy implementation lives in the
 .B collibra
@@ -43,6 +44,16 @@ See
 Data contract scaffolding, status management, and the 7-step ORM/SBVR pipeline.
 See
 .BR singine\-collibra\-contract (1).
+.TP
+.B io
+Governed Collibra I/O workflows.
+The default MCP backend is Collibra CHIP, typically built from
+.IR ~/ws/github/collibra/chip/.build/chip .
+Subcommands include
+.BR chip\ status ,
+.BR chip\ configure ,
+and
+.BR chip\ tools\ list .
 .TP
 .B server
 id-gen HTTP API server in net or DMZ mode.

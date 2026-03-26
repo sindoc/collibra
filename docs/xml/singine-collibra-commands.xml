@@ -209,6 +209,53 @@
   </component>
 
   <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- IO                                                                      -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <component name="io" help="Governed Collibra I/O workflows">
+    <description>
+      Governs how Singine talks to the Collibra platform. The default MCP backend
+      is Collibra CHIP, built from source under ~/ws/github/collibra/chip/.
+      Singine remains the execution shell; Collibra-specific MCP wiring lives here.
+    </description>
+    <implementation>singine-collibra/python/singine_collibra/io.py, singine-collibra/python/singine_collibra/chip.py</implementation>
+
+    <commands>
+      <command name="chip" help="Operate the Collibra CHIP MCP server">
+        <subcommands>
+          <command name="status" help="Validate binary paths, client wiring, and the CHIP stdio startup probe">
+            <options>
+              <option name="--binary" default="~/ws/github/collibra/chip/.build/chip"/>
+              <option name="--json" type="flag"/>
+            </options>
+            <example>singine collibra io chip status</example>
+          </command>
+          <command name="configure" help="Wire Codex and/or Claude to the source-built CHIP binary">
+            <args>
+              <arg name="client" required="true" choices="codex,claude,all"/>
+            </args>
+            <options>
+              <option name="--binary" default="~/ws/github/collibra/chip/.build/chip"/>
+              <option name="--json" type="flag"/>
+            </options>
+            <example>singine collibra io chip configure all</example>
+          </command>
+          <command name="tools" help="Inspect CHIP tool metadata">
+            <subcommands>
+              <command name="list" help="Start CHIP briefly and list the tools it registers">
+                <options>
+                  <option name="--binary" default="~/ws/github/collibra/chip/.build/chip"/>
+                  <option name="--json" type="flag"/>
+                </options>
+                <example>singine collibra io chip tools list</example>
+              </command>
+            </subcommands>
+          </command>
+        </subcommands>
+      </command>
+    </commands>
+  </component>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
   <!-- ID                                                                      -->
   <!-- ═══════════════════════════════════════════════════════════════════════ -->
   <component name="id" help="Contract ID generation and namespace registry">

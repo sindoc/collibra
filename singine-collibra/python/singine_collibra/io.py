@@ -15,6 +15,12 @@ import subprocess
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
+from .chip import (
+    cmd_collibra_io_chip_configure,
+    cmd_collibra_io_chip_status,
+    cmd_collibra_io_chip_tools_list,
+)
+
 
 _DEFAULT_EDGE_NAMESPACE = "collibra-edge"
 _DEFAULT_EDGE_COMPONENT = "edge-controller"
@@ -405,6 +411,57 @@ def add_collibra_io_parser(collibra_sub: argparse._SubParsersAction) -> None:
     community_parser.add_argument("--parent-id", help="Parent community UUID for a sub-community")
     community_parser.add_argument("--json", action="store_true", default=True)
     community_parser.set_defaults(func=cmd_collibra_io_create_community)
+
+    chip_parser = io_sub.add_parser(
+        "chip",
+        help="Use the Collibra CHIP MCP server as the default governed Collibra I/O backend",
+    )
+    chip_parser.set_defaults(func=lambda a: (chip_parser.print_help(), 1)[1])
+    chip_sub = chip_parser.add_subparsers(dest="collibra_io_chip_subject")
+
+    status_parser = chip_sub.add_parser(
+        "status",
+        help="Validate the local CHIP binary, client wiring, and stdio startup probe",
+    )
+    status_parser.add_argument(
+        "--binary",
+        default="~/ws/github/collibra/chip/.build/chip",
+        help="Path to the source-built chip binary",
+    )
+    status_parser.add_argument("--json", action="store_true")
+    status_parser.set_defaults(func=cmd_collibra_io_chip_status)
+
+    configure_parser = chip_sub.add_parser(
+        "configure",
+        help="Wire Codex and/or Claude to the source-built CHIP binary",
+    )
+    configure_parser.add_argument("client", choices=["codex", "claude", "all"], help="Client to configure")
+    configure_parser.add_argument(
+        "--binary",
+        default="~/ws/github/collibra/chip/.build/chip",
+        help="Path to the source-built chip binary",
+    )
+    configure_parser.add_argument("--json", action="store_true")
+    configure_parser.set_defaults(func=cmd_collibra_io_chip_configure)
+
+    tools_parser = chip_sub.add_parser(
+        "tools",
+        help="Inspect tool metadata exposed by CHIP",
+    )
+    tools_parser.set_defaults(func=lambda a: (tools_parser.print_help(), 1)[1])
+    tools_sub = tools_parser.add_subparsers(dest="collibra_io_chip_tools_action")
+
+    tools_list_parser = tools_sub.add_parser(
+        "list",
+        help="Start CHIP briefly and list the tools it registers",
+    )
+    tools_list_parser.add_argument(
+        "--binary",
+        default="~/ws/github/collibra/chip/.build/chip",
+        help="Path to the source-built chip binary",
+    )
+    tools_list_parser.add_argument("--json", action="store_true")
+    tools_list_parser.set_defaults(func=cmd_collibra_io_chip_tools_list)
 
     edge_parser = io_sub.add_parser(
         "edge",
