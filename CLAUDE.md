@@ -11,6 +11,40 @@ This repository implements a **Bash-based contract ID generation and lifecycle m
 **Primary working directory:** `id-gen/`
 **Supporting utilities:** `uniWork/`
 
+## Repository Boundary Policy
+
+This repository is the canonical home for Collibra-specific implementation
+logic.
+
+Assistants should follow these rules:
+
+1. Put code here when it depends on Collibra REST APIs, SDKs, `collibractl`,
+   Edge runtime behavior, datasource capabilities, or tenant-facing Collibra
+   concepts.
+2. Keep Singine as the secure execution shell and documentation/runtime layer.
+   Singine may expose `singine collibra ...` commands, but the Collibra-aware
+   implementation should live here and be imported from here.
+3. Prefer SilkPage for XML/XSLT/XPath/RDF/TTL/SPARQL/SQL/GraphQL document and
+   payload transformation pipelines instead of duplicating transformation logic
+   in Collibra-specific Python.
+4. When in doubt, ask: "Does this code still make sense without Collibra?" If
+   no, it belongs in this repo.
+
+Concrete examples that belong here:
+
+- datasource creation/diagnosis for Edge
+- Edge capability wiring
+- Collibra API adapters and SDK shims
+- wrappers for official Collibra CLI conventions
+- Collibra-specific manpages and DocBook sources under `docs/`
+
+Concrete examples that belong in Singine:
+
+- generic authn/authz and identity-provider routing
+- JVM toolchain orchestration
+- generic command runtime infrastructure
+- cross-domain docs publication
+
 ---
 
 ## singine collibra Integration
@@ -22,7 +56,7 @@ family.  The command pattern is:
 singine collibra <component> <command> [subcommand] [options]
 ```
 
-The `singine_collibra/` Python package in this repository is the **core
+The `singine-collibra/python/singine_collibra/` Python package in this repository is the **core
 implementation**.  The singine CLI dynamically imports it when any
 `singine collibra id`, `singine collibra contract`, `singine collibra pipeline`,
 or `singine collibra server` subcommand is invoked.
@@ -74,7 +108,7 @@ singine collibra server stop
 singine collibra server dmz
 ```
 
-### Python Package (`singine_collibra/`)
+### Python Package (`singine-collibra/python/singine_collibra/`)
 
 The package is importable if you add the collibra repo root to `PYTHONPATH`:
 
@@ -84,7 +118,12 @@ python3 -c "from singine_collibra import idgen; idgen.gen()"
 ```
 
 Singine discovers it automatically via `COLLIBRA_DIR` (default:
-`~/ws/git/github/sindoc/collibra`).
+`~/ws/git/github/sindoc/collibra`) and prefers the
+`singine-collibra/python/` layout.
+
+The Collibra metamodel and its four-letter codes are a canonical integration
+contract. If a new Collibra-facing feature cannot explain how it maps to the
+metamodel or its codes, the design is incomplete.
 
 ---
 

@@ -9,6 +9,21 @@
 -->
 <collibra-governance-model version="1.0" generated="2026-03-25">
 
+  <integration-contract id="collibra-metamodel-codes">
+    <name>Collibra Metamodel Code Contract</name>
+    <description>
+      The Collibra metamodel and its four-letter codes form a canonical
+      integration contract across Collibra-specific implementations, Singine
+      execution flows, SilkPage transformations, and Edge-facing metadata
+      operations.
+    </description>
+    <principles>
+      <principle>New integrations should declare which metamodel objects they preserve, project, or derive.</principle>
+      <principle>Four-letter codes are not cosmetic labels; they are stable governed identifiers used across command surfaces, payload transforms, and operator documentation.</principle>
+      <principle>When an API or transformation cannot explain its mapping to the metamodel, the design is incomplete.</principle>
+    </principles>
+  </integration-contract>
+
   <!-- ══════════════════════════════════════════════════════════════════════ -->
   <!-- CONTRACT ID MODEL                                                       -->
   <!-- ══════════════════════════════════════════════════════════════════════ -->

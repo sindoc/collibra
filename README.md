@@ -5,6 +5,11 @@ data contract lifecycle, ORM/SBVR semantic pipeline, and API server.
 
 All features are exposed through the `singine collibra` CLI family.
 
+This repository is the system of record for all Collibra-specific
+implementations. Singine may expose and document those capabilities, but the
+code that knows about Collibra APIs, SDKs, CLI conventions, Edge, datasource
+capabilities, and tenant-specific behaviors belongs here.
+
 ---
 
 ## Architecture
@@ -12,6 +17,53 @@ All features are exposed through the `singine collibra` CLI family.
 ```
 singine collibra <component> <command> [subcommand] [options]
 ```
+
+### Repository Boundary
+
+The architecture follows three hard boundaries:
+
+| Concern | System of record | Notes |
+|---|---|---|
+| Collibra-specific code | `collibra/` | REST API clients, SDK adapters, `collibractl` wrappers, Edge workflows, datasource/capability logic, Collibra runbooks |
+| Secure execution engine | `singine/` | authentication, authorisation, identity/provider routing, JVM orchestration, manpages/docbook publication, CLI runtime |
+| Payload/document transformation | `silkpage/` | XML, XSLT, XPath, RDF, TTL, SPARQL, SQL, GraphQL and adjacent transformation flows |
+
+Operational rule:
+
+- If the implementation depends on Collibra semantics, endpoints, SDK classes,
+  Edge behavior, or official Collibra CLI conventions, it belongs in this repo.
+- Singine should call into this repo through `COLLIBRA_DIR` discovery and thin
+  parser/invocation hooks.
+- SilkPage should be the preferred home for cross-format transformation logic,
+  especially where James Clark, Tim Bray, and Norman Walsh style XML-first
+  workflows are a better fit than ad hoc Python.
+
+### Hooking Model
+
+The preferred integration path is:
+
+```text
+singine CLI/runtime -> dynamic import from collibra/singine-collibra/python/singine_collibra -> Collibra implementation
+                                                         \
+                                                          -> silkpage for XML/RDF/XSLT/XPath transforms
+```
+
+That keeps Collibra behavior versioned here while still letting Singine provide
+the secure execution shell, docs toolchain, and operator ergonomics.
+
+### Reuse First
+
+Before adding new Collibra-specific code, check these existing assets:
+
+- `singine-collibra/` for Singine-facing Collibra implementation hooks
+- `collibra-integrations/` for JVM-oriented integration modules
+- `edge/` for Edge runtime, installer, and operator workflows
+- sibling `silkpage/` for transformation-heavy XML/RDF/XSLT/XPath work
+- sibling `tools-nested/collibra-fs/` for Collibra CLI and filesystem-oriented utilities
+
+The Collibra metamodel and its four-letter codes are treated as a canonical
+integration contract across `collibra`, `singine`, `silkpage`, and Edge-facing
+components.
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
@@ -26,7 +78,7 @@ singine collibra <component> <command> [subcommand] [options]
 └──────────────┴───────────────┴─────────────────┴────────────────┘
          │               │               │
          ▼               ▼               ▼
-  edge/ (Docker)   id-gen/ (Bash)   singine_collibra/ (Python)
+  edge/ (Docker)   id-gen/ (Bash)   singine-collibra/ (Python package home)
 ```
 
 ### Component map
@@ -39,7 +91,7 @@ singine collibra <component> <command> [subcommand] [options]
 | ORM/SBVR pipeline | `singine collibra contract pipeline` | `id-gen/collibra/metamodel_7step.sh` |
 | API server | `singine collibra server` | `id-gen/server/server.sh` |
 | Mock DGC | `singine collibra edge` (dev mode) | `edge/image/collibra-edge-mock/mock_dgc.py` |
-| Python glue | imported by singine | `singine_collibra/` |
+| Python glue | imported by singine | `singine-collibra/python/singine_collibra/` |
 
 ---
 
@@ -243,16 +295,17 @@ singine collibra server stop
 
 ---
 
-## Python Package (`singine_collibra/`)
+## Python Package (`singine-collibra/python/singine_collibra/`)
 
 The `singine_collibra` package is the core Python implementation for the
 `singine collibra id`, `singine collibra contract`, and `singine collibra server`
-subcommands. It is dynamically imported by the singine CLI.
+subcommands. It is dynamically imported by the singine CLI from the
+`singine-collibra/python/` path.
 
 ### Direct use
 
 ```bash
-export PYTHONPATH=$PYTHONPATH:~/ws/git/github/sindoc/collibra
+export PYTHONPATH=$PYTHONPATH:~/ws/git/github/sindoc/collibra/singine-collibra/python
 ```
 
 ```python
@@ -276,6 +329,11 @@ server.start(port=7331, mode="net")
 |----------|---------|---------|
 | `COLLIBRA_DIR` | `~/ws/git/github/sindoc/collibra` | Collibra repo root |
 | `COLLIBRA_EDGE_DIR` | `$COLLIBRA_DIR/edge` | Edge stack root (singine) |
+
+### Metamodel Contract
+
+The Collibra metamodel and its four-letter codes are a canonical integration
+contract across `collibra`, `singine`, `silkpage`, and Edge-facing workflows.
 
 ---
 
@@ -338,13 +396,16 @@ collibra/
 │   ├── collibra-webhooks/           ← webhook event processor
 │   └── collibra-storage/
 │
-├── singine_collibra/                ← Python core implementation
-│   ├── __init__.py
-│   ├── paths.py                     ← COLLIBRA_DIR, IDGEN_DIR, EDGE_DIR
-│   ├── idgen.py                     ← make wrappers for id-gen
-│   ├── contract.py                  ← make wrappers for contracts
-│   ├── server.py                    ← bash wrappers for server.sh
-│   └── command.py                   ← argparse registration
+├── singine-collibra/                ← Singine-facing Collibra implementation home
+│   ├── README.md
+│   └── python/
+│       └── singine_collibra/        ← importable Python package
+│           ├── __init__.py
+│           ├── paths.py             ← COLLIBRA_DIR, IDGEN_DIR, EDGE_DIR
+│           ├── idgen.py             ← make wrappers for id-gen
+│           ├── contract.py          ← make wrappers for contracts
+│           ├── server.py            ← bash wrappers for server.sh
+│           └── command.py           ← argparse registration
 │
 └── uniWork/                         ← runtime state + credentials
     ├── CollibraBaseUrl
