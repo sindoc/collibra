@@ -1,4 +1,4 @@
-"""argparse registration for singine collibra id/contract/pipeline/server subcommands.
+"""argparse registration for singine collibra id/contract/io/pipeline/server subcommands.
 
 Called from singine's build_parser() via dynamic import.
 
@@ -9,6 +9,9 @@ Usage (inside singine's build_parser):
 from __future__ import annotations
 
 import argparse
+import json
+
+from .io import add_collibra_io_parser
 
 
 # ── Command handlers ──────────────────────────────────────────────────────────
@@ -107,10 +110,197 @@ def _cmd_server_dmz(args: argparse.Namespace) -> int:
     return dmz(port=args.port)
 
 
+def _workspace_depth(value: str) -> int:
+    mapping = {
+        "self": 0,
+        "+": 1,
+        "++": 2,
+        "+++": 3,
+        "++++": 4,
+        "+++++": 5,
+    }
+    if value not in mapping:
+        raise argparse.ArgumentTypeError(f"invalid workspace depth: {value}")
+    return mapping[value]
+
+
+def _print_payload(payload: object, *, as_json: bool) -> int:
+    if as_json:
+        print(json.dumps(payload, indent=2, default=str))
+        return 0
+    if isinstance(payload, dict):
+        print(json.dumps(payload, indent=2, default=str))
+    else:
+        print(payload)
+    return 0
+
+
+def _cmd_query_status(args: argparse.Namespace) -> int:
+    from .chip_queries import _GRAMMAR_XML, _RPC_HTTP_MAP
+
+    payload = {
+        "ok": True,
+        "grammar_xml": {
+            "path": str(_GRAMMAR_XML),
+            "exists": _GRAMMAR_XML.exists(),
+        },
+        "rpc_bindings": sorted(_RPC_HTTP_MAP),
+    }
+    return _print_payload(payload, as_json=args.json)
+
+
+def _cmd_query_jprofiler_targets(args: argparse.Namespace) -> int:
+    from pathlib import Path
+
+    from .chip_queries import discover_jvm_targets
+
+    payload = {
+        "ok": True,
+        "targets": [
+            target.as_dict()
+            for target in discover_jvm_targets(agent_path=Path(args.agent_path).expanduser())
+        ],
+    }
+    return _print_payload(payload, as_json=args.json)
+
+
+def _cmd_query_grpc_bindings(args: argparse.Namespace) -> int:
+    from .chip_queries import _RPC_HTTP_MAP
+
+    payload = {
+        "ok": True,
+        "bindings": [
+            {"rpc": rpc, "method": method, "path": path}
+            for rpc, (method, path) in sorted(_RPC_HTTP_MAP.items())
+        ],
+    }
+    return _print_payload(payload, as_json=args.json)
+
+
+def _query_context(args: argparse.Namespace):
+    from .chip_queries import WorkspaceContext, WorkspaceDepth
+
+    return WorkspaceContext(depth=WorkspaceDepth(args.depth))
+
+
+def _cmd_query_code_lookup(args: argparse.Namespace) -> int:
+    ctx = _query_context(args)
+    result = ctx.codeLookup(args.term, scope=args.scope).exec().try_catch_claude()
+    return _print_payload(result, as_json=args.json)
+
+
+def _cmd_query_type_retrieval(args: argparse.Namespace) -> int:
+    ctx = _query_context(args)
+    result = ctx.codeLookup(args.term, scope=args.scope).type_retrieval().try_catch_claude()
+    return _print_payload(result, as_json=args.json)
+
+
+def _cmd_query_grpc_http_call(args: argparse.Namespace) -> int:
+    from .chip_queries import GrpcHttpRequest, grpc_http_call
+
+    body = json.loads(args.body)
+    payload = grpc_http_call(
+        GrpcHttpRequest(
+            rpc=args.rpc,
+            body=body,
+            base_url=args.base_url,
+            grpc_port=args.grpc_port,
+            use_http=not args.native_grpc,
+        )
+    )
+    return _print_payload(payload, as_json=args.json)
+
+
+def _cmd_quantum_status(args: argparse.Namespace) -> int:
+    from pathlib import Path
+
+    from .quantum_catalog import loadCodeTableFromBaseFromShiva
+
+    docs_root = Path(__file__).parent.parent.parent.parent / "docs" / "quantum"
+    payload = {
+        "ok": True,
+        "code_table_size": len(loadCodeTableFromBaseFromShiva()),
+        "artifacts": {
+            "tex": str(docs_root / "chip-quantum-catalog.tex"),
+            "svg": str(docs_root / "complex-plane.svg"),
+            "xml": str(docs_root / "quantum-catalog.xml"),
+        },
+    }
+    return _print_payload(payload, as_json=args.json)
+
+
+def _cmd_quantum_load_shiva(args: argparse.Namespace) -> int:
+    from pathlib import Path
+
+    from .quantum_catalog import loadCodeTableFromBaseFromShiva
+
+    payload = {
+        "ok": True,
+        "db": str(Path(args.db).expanduser()),
+        "entries": {
+            code: entry.__dict__
+            for code, entry in loadCodeTableFromBaseFromShiva(db=Path(args.db).expanduser()).items()
+        },
+    }
+    return _print_payload(payload, as_json=args.json)
+
+
+def _cmd_quantum_refdata(args: argparse.Namespace) -> int:
+    from .quantum_catalog import refData
+
+    entry = refData(args.code)
+    payload = {"ok": entry is not None, "entry": entry.__dict__ if entry else None}
+    return _print_payload(payload, as_json=args.json)
+
+
+def _parse_complex_csv(value: str) -> list[complex]:
+    try:
+        return [complex(part.strip()) for part in value.split(",") if part.strip()]
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(str(exc)) from exc
+
+
+def _cmd_quantum_cosine(args: argparse.Namespace) -> int:
+    from .quantum_catalog import cosine
+
+    payload = (
+        cosine()(args.u, args.v)
+        .similarity()
+        .complex()
+        .resolve()
+        .xml()
+        .catalog()
+        .collibra()
+    )
+    return _print_payload(payload, as_json=args.json)
+
+
+def _cmd_quantum_bubble_leader(args: argparse.Namespace) -> int:
+    from .quantum_catalog import bubbleLeader
+
+    payload = (
+        bubbleLeader(args.items)
+        .builder()
+        .piotr()
+        .groovy()
+        .clojure()
+        .c()
+        .f()
+        .math()
+        .godel()
+        .escher()
+        .pg()
+        .pg()
+        .paulGraham()
+        .build()
+    )
+    return _print_payload(payload, as_json=args.json)
+
+
 # ── Parser registration ───────────────────────────────────────────────────────
 
 def add_collibra_subcommands(collibra_sub: argparse._SubParsersAction) -> None:
-    """Register id, contract, pipeline, server subcommands under ``singine collibra``."""
+    """Register id, contract, io, query, quantum, and server subcommands under ``singine collibra``."""
 
     # ── id ────────────────────────────────────────────────────────────────────
     id_parser = collibra_sub.add_parser(
@@ -202,6 +392,102 @@ def add_collibra_subcommands(collibra_sub: argparse._SubParsersAction) -> None:
     p.add_argument("--all", action="store_true", help="Show progress for all contracts")
     p.add_argument("--json", action="store_true", help="Emit JSON")
     p.set_defaults(func=_cmd_contract_progress)
+
+    # ── io ────────────────────────────────────────────────────────────────────
+    add_collibra_io_parser(collibra_sub)
+
+    # ── query ─────────────────────────────────────────────────────────────────
+    query_parser = collibra_sub.add_parser(
+        "query",
+        help="CHIP MCP query DSL helpers and persistence bridge probes",
+    )
+    query_parser.set_defaults(func=lambda a: (query_parser.print_help(), 1)[1])
+    query_sub = query_parser.add_subparsers(dest="collibra_query_action")
+
+    p = query_sub.add_parser("status", help="Show chip query grammar and RPC binding status")
+    p.add_argument("--json", action="store_true", help="Emit JSON")
+    p.set_defaults(func=_cmd_query_status)
+
+    p = query_sub.add_parser("jprofiler-targets", help="Discover Groovy and Clojure JVM attach targets")
+    p.add_argument(
+        "--agent-path",
+        default="/opt/jprofiler/bin/linux-x64/libjprofilerti.so",
+        help="JProfiler agent shared library path",
+    )
+    p.add_argument("--json", action="store_true", help="Emit JSON")
+    p.set_defaults(func=_cmd_query_jprofiler_targets)
+
+    p = query_sub.add_parser("grpc-bindings", help="List HTTP-transcoded persistence RPC bindings")
+    p.add_argument("--json", action="store_true", help="Emit JSON")
+    p.set_defaults(func=_cmd_query_grpc_bindings)
+
+    p = query_sub.add_parser("code-lookup", help="Run a CHIP code lookup against the configured workspace")
+    p.add_argument("term", help="Search term")
+    p.add_argument("--scope", default=None, help="Optional lookup scope")
+    p.add_argument(
+        "--depth",
+        type=_workspace_depth,
+        default=0,
+        metavar="{self,+,++,+++,++++,+++++}",
+        help="Workspace traversal depth (default: self)",
+    )
+    p.add_argument("--json", action="store_true", help="Emit JSON")
+    p.set_defaults(func=_cmd_query_code_lookup)
+
+    p = query_sub.add_parser("type-retrieval", help="Run a typed CHIP code lookup projection")
+    p.add_argument("term", help="Search term")
+    p.add_argument("--scope", default=None, help="Optional lookup scope")
+    p.add_argument(
+        "--depth",
+        type=_workspace_depth,
+        default=0,
+        metavar="{self,+,++,+++,++++,+++++}",
+        help="Workspace traversal depth (default: self)",
+    )
+    p.add_argument("--json", action="store_true", help="Emit JSON")
+    p.set_defaults(func=_cmd_query_type_retrieval)
+
+    p = query_sub.add_parser("grpc-http-call", help="Invoke a persistence RPC via the HTTP bridge")
+    p.add_argument("rpc", choices=["GenId", "QueryLineage", "ShortestPath", "Categorise", "Similarity", "Migrate"])
+    p.add_argument("--body", default="{}", help="JSON request body")
+    p.add_argument("--base-url", default="http://127.0.0.1:9090", help="Bridge base URL")
+    p.add_argument("--grpc-port", type=int, default=50051, help="Native gRPC port (for metadata only)")
+    p.add_argument("--native-grpc", action="store_true", help="Return native gRPC endpoint metadata instead of using HTTP")
+    p.add_argument("--json", action="store_true", help="Emit JSON")
+    p.set_defaults(func=_cmd_query_grpc_http_call)
+
+    # ── quantum ───────────────────────────────────────────────────────────────
+    quantum_parser = collibra_sub.add_parser(
+        "quantum",
+        help="Quantum catalog, code-table, cosine, and BubbleLeader helpers",
+    )
+    quantum_parser.set_defaults(func=lambda a: (quantum_parser.print_help(), 1)[1])
+    quantum_sub = quantum_parser.add_subparsers(dest="collibra_quantum_action")
+
+    p = quantum_sub.add_parser("status", help="Show quantum catalog artifact and code-table status")
+    p.add_argument("--json", action="store_true", help="Emit JSON")
+    p.set_defaults(func=_cmd_quantum_status)
+
+    p = quantum_sub.add_parser("load-shiva", help="Load the in-memory Shiva base-layer code table")
+    p.add_argument("--db", default="/tmp/humble-idp.db", help="Reference database path")
+    p.add_argument("--json", action="store_true", help="Emit JSON")
+    p.set_defaults(func=_cmd_quantum_load_shiva)
+
+    p = quantum_sub.add_parser("refdata", help="Look up a single Shiva code-table entry")
+    p.add_argument("code", help="Code table key such as AAAA or FFFFF")
+    p.add_argument("--json", action="store_true", help="Emit JSON")
+    p.set_defaults(func=_cmd_quantum_refdata)
+
+    p = quantum_sub.add_parser("cosine", help="Run the complex cosine -> catalog -> Collibra chain")
+    p.add_argument("--u", required=True, type=_parse_complex_csv, help="Comma-separated complex vector, e.g. 1+0j,0+1j")
+    p.add_argument("--v", required=True, type=_parse_complex_csv, help="Comma-separated complex vector, e.g. 0.5+0j,0+0.5j")
+    p.add_argument("--json", action="store_true", help="Emit JSON")
+    p.set_defaults(func=_cmd_quantum_cosine)
+
+    p = quantum_sub.add_parser("bubble-leader", help="Run the full BubbleLeader symbolic chain")
+    p.add_argument("items", nargs="*", help="Items to bubble-sort before building the chain")
+    p.add_argument("--json", action="store_true", help="Emit JSON")
+    p.set_defaults(func=_cmd_quantum_bubble_leader)
 
     # ── server ────────────────────────────────────────────────────────────────
     server_parser = collibra_sub.add_parser(

@@ -1,4 +1,4 @@
-# CLAUDE.md - Collibra Repository Contract
+# AGENTS.md - Cross-Agent Contract
 
 <!-- Generated from docs/xml/singine-agent-contract.xml. -->
 
@@ -9,8 +9,8 @@ This repository is the system of record for Collibra-specific code,
 
 This file follows the shared-agent split of approximately 80% common policy and 20% agent-specific guidance.
 
-This file gives Claude-specific emphasis while inheriting the shared
-        Singine agent contract for the repository.
+This file is the generic entry point for agents and LLM-based tools that
+        do not have their own dedicated repository instruction file yet.
 
 ## Repository Boundary
 
@@ -50,6 +50,5 @@ This file gives Claude-specific emphasis while inheriting the shared
 
 ## Agent-Specific Additions
 
-- Retain higher-level repository walkthrough context, but keep the shared operational contract authoritative.
-- When describing a change, include the metamodel and command-surface implications, not just implementation detail.
-- Use the shared XML contract as the source of truth for this file and keep agent-specific additions small.
+- Assume the shared 80% contract is mandatory and keep system-specific behavior in a thin compatibility layer.
+- New agent integrations should extend the XML contract rather than forking repository policy into unrelated markdown files.

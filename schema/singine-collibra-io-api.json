@@ -1,0 +1,589 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Singine Collibra IO API",
+    "version": "0.1.0",
+    "summary": "Generated HTTP interaction contract for the `singine collibra io` command family.",
+    "description": "Generated from docs/xml/singine-collibra-commands.xml so the CLI, XML publication, and OpenAPI surface stay aligned."
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:9090",
+      "description": "Local Singine panel or adapter surface"
+    }
+  ],
+  "paths": {
+    "/api/collibra/io/chip/status": {
+      "get": {
+        "operationId": "collibraIoChipStatus",
+        "summary": "Validate binary paths, client wiring, and the CHIP stdio startup probe",
+        "responses": {
+          "200": {
+            "description": "Command result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "CLI example: `singine collibra io chip status`",
+        "parameters": [
+          {
+            "name": "binary",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "~/ws/github/collibra/chip/.build/chip"
+            }
+          },
+          {
+            "name": "json",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ]
+      }
+    },
+    "/api/collibra/io/chip/configure": {
+      "post": {
+        "operationId": "collibraIoChipConfigure",
+        "summary": "Wire Codex and/or Claude to the source-built CHIP binary",
+        "responses": {
+          "200": {
+            "description": "Command result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "CLI example: `singine collibra io chip configure all`",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChipConfigureRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/collibra/io/chip/tools/list": {
+      "get": {
+        "operationId": "collibraIoChipToolsList",
+        "summary": "Start CHIP briefly and list the tools it registers",
+        "responses": {
+          "200": {
+            "description": "Command result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "CLI example: `singine collibra io chip tools list`",
+        "parameters": [
+          {
+            "name": "binary",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "~/ws/github/collibra/chip/.build/chip"
+            }
+          },
+          {
+            "name": "json",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ]
+      }
+    },
+    "/api/collibra/io/create/community": {
+      "post": {
+        "operationId": "collibraIoCreateCommunity",
+        "summary": "Create a Collibra community",
+        "responses": {
+          "200": {
+            "description": "Command result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "CLI example: `singine collibra io create community --name \"Data Governance\"`",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCommunityRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/collibra/io/create/template": {
+      "post": {
+        "operationId": "collibraIoCreateTemplate",
+        "summary": "Generate a CSV import template and import view specification from the metamodel and available ViewConfigs",
+        "responses": {
+          "200": {
+            "description": "Command result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "CLI example: `singine collibra io create template --name glossary-import --asset-type \"Business Term\" --scope-attribute \"domain=Finance\" --attribute \"Definition:definition\" --output /tmp/glossary-import.json`",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTemplateRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/collibra/io/metamodel/status": {
+      "get": {
+        "operationId": "collibraIoMetamodelStatus",
+        "summary": "Summarize the exported Collibra metamodel package on disk",
+        "responses": {
+          "200": {
+            "description": "Command result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "CLI example: `singine collibra io metamodel status`",
+        "parameters": [
+          {
+            "name": "root",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "~/ws/today/metamodel/reference/current/latest"
+            }
+          }
+        ]
+      }
+    },
+    "/api/collibra/io/metamodel/visualize": {
+      "post": {
+        "operationId": "collibraIoMetamodelVisualize",
+        "summary": "Visualize one asset type and its assigned relations",
+        "responses": {
+          "200": {
+            "description": "Command result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "CLI example: `singine collibra io metamodel visualize --asset-type \"Data Notebook\" --format mermaid`",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MetamodelVisualizeRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/collibra/io/metamodel/export": {
+      "post": {
+        "operationId": "collibraIoMetamodelExport",
+        "summary": "Export the metamodel as Singine opmodel JSON or as a CSV import template",
+        "responses": {
+          "200": {
+            "description": "Command result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "CLI example: `singine collibra io metamodel export --format opmodel --asset-type \"Business Term\" --output /tmp/business-term-opmodel.json`",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MetamodelExportRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/collibra/io/edge/connection/probe-postgres": {
+      "post": {
+        "operationId": "collibraIoEdgeConnectionProbePostgres",
+        "summary": "Preflight a PostgreSQL-backed Edge connection from the workstation and the live Edge runtime",
+        "responses": {
+          "200": {
+            "description": "Command result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "CLI example: `singine collibra io edge connection probe-postgres --json`",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EdgeConnectionProbePostgresRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/collibra/io/edge/datasource/diagnose": {
+      "post": {
+        "operationId": "collibraIoEdgeDatasourceDiagnose",
+        "summary": "Diagnose why a datasource is not resolving to a runnable Edge capability",
+        "responses": {
+          "200": {
+            "description": "Command result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "CLI example: `singine collibra io edge datasource diagnose --id DATASOURCE-UUID --json`",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EdgeDatasourceDiagnoseRequest"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CommandResult": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "command": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object"
+          }
+        }
+      },
+      "ChipConfigureRequest": {
+        "type": "object",
+        "properties": {
+          "client": {
+            "type": "string",
+            "enum": [
+              "codex",
+              "claude",
+              "all"
+            ]
+          },
+          "binary": {
+            "type": "string",
+            "default": "~/ws/github/collibra/chip/.build/chip"
+          },
+          "json": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "client"
+        ]
+      },
+      "CreateCommunityRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "topLevel": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "parentId": {
+            "type": "string"
+          },
+          "json": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CreateTemplateRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "assetType": {
+            "type": "string"
+          },
+          "viewName": {
+            "type": "string"
+          },
+          "domainId": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string",
+            "default": "catalog"
+          },
+          "scopeAttribute": {
+            "type": "string"
+          },
+          "attribute": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "relation": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "viewLimit": {
+            "type": "integer",
+            "default": 100
+          },
+          "delimiter": {
+            "type": "string",
+            "default": ","
+          },
+          "output": {
+            "type": "string"
+          },
+          "metamodelRoot": {
+            "type": "string",
+            "default": "~/ws/today/metamodel/reference/current/latest"
+          }
+        },
+        "required": [
+          "name",
+          "assetType"
+        ]
+      },
+      "MetamodelVisualizeRequest": {
+        "type": "object",
+        "properties": {
+          "assetType": {
+            "type": "string"
+          },
+          "root": {
+            "type": "string",
+            "default": "~/ws/today/metamodel/reference/current/latest"
+          },
+          "format": {
+            "type": "string",
+            "default": "json"
+          },
+          "output": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "assetType"
+        ]
+      },
+      "MetamodelExportRequest": {
+        "type": "object",
+        "properties": {
+          "root": {
+            "type": "string",
+            "default": "~/ws/today/metamodel/reference/current/latest"
+          },
+          "format": {
+            "type": "string",
+            "default": "opmodel"
+          },
+          "assetType": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "viewName": {
+            "type": "string"
+          },
+          "domainId": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string",
+            "default": "catalog"
+          },
+          "viewLimit": {
+            "type": "integer",
+            "default": 100
+          },
+          "delimiter": {
+            "type": "string",
+            "default": ","
+          },
+          "output": {
+            "type": "string"
+          }
+        }
+      },
+      "EdgeConnectionProbePostgresRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "default": "sindoc-singine-pg-dev-101"
+          },
+          "connectionId": {
+            "type": "string"
+          },
+          "container": {
+            "type": "string",
+            "default": "singine-pg-dev-101"
+          },
+          "edgeHost": {
+            "type": "string",
+            "default": "host.docker.internal"
+          },
+          "localHost": {
+            "type": "string",
+            "default": "127.0.0.1"
+          },
+          "port": {
+            "type": "integer",
+            "default": 5433
+          },
+          "database": {
+            "type": "string",
+            "default": "postgres"
+          },
+          "user": {
+            "type": "string",
+            "default": "postgres"
+          },
+          "password": {
+            "type": "string",
+            "default": "postgres"
+          },
+          "driverVersion": {
+            "type": "string",
+            "default": "42.7.4"
+          },
+          "namespace": {
+            "type": "string",
+            "default": "collibra-edge"
+          },
+          "component": {
+            "type": "string",
+            "default": "edge-controller"
+          },
+          "json": {
+            "type": "boolean"
+          }
+        }
+      },
+      "EdgeDatasourceDiagnoseRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "namespace": {
+            "type": "string",
+            "default": "collibra-edge"
+          },
+          "component": {
+            "type": "string",
+            "default": "edge-controller"
+          },
+          "tail": {
+            "type": "integer",
+            "default": 600
+          },
+          "json": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    }
+  }
+}

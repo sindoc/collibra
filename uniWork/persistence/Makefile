@@ -16,7 +16,7 @@ SCHEMA   := schema
 LOGS     := logs
 
 .PHONY: all migrate analyze path status semantic ldap rust-build clojure-run \
-        ipad-url help clean
+        go-build ipad-url help clean
 
 all: migrate
 
@@ -41,6 +41,9 @@ analyze: migrate | $(LOGS)
 # ── Rust shortest-path ────────────────────────────────────────────────────────
 rust-build:
 	cargo build --release --manifest-path rust/Cargo.toml
+
+go-build:
+	cd go && go build ./...
 
 path: rust-build
 	@echo "=== Phase 4: Shortest path $(src) → $(dst) ==="
@@ -114,6 +117,7 @@ help:
 	@echo "  make path src=X dst=Y   Shortest path between gen_ids (Rust)"
 	@echo "  make gen-id ns=<ns>     Generate inode-style ID for namespace"
 	@echo "  make clojure-run         Categories + similarity (JVM)"
+	@echo "  make go-build            Build Go chip query helpers"
 	@echo "  make semantic            FOAF/DOAP/RSS output"
 	@echo "  make ldap                Print LDAP entity tree"
 	@echo "  make status              DB health + schema versions"
