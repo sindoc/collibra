@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<agent-contract version="1.0" shared_ratio="80" specific_ratio="20">
+  <metadata>
+    <title>Singine Agent Contract for the Collibra Repository</title>
+    <purpose>
+      Define the common cross-agent working contract for this repository, with a
+      small agent-specific extension layer for Codex, Claude, and future agentic
+      systems including Singine itself.
+    </purpose>
+  </metadata>
+
+  <common>
+    <summary>
+      This repository is the system of record for Collibra-specific code,
+      metamodel abstractions, operating-model import/export workflows, Edge
+      integrations, and the implementation behind the `singine collibra ...`
+      command family.
+    </summary>
+
+    <boundary>
+      <rule>Implement Collibra REST, SDK, CLI, MCP, operating-model, Edge, and tenant-specific governance logic here.</rule>
+      <rule>Expose Collibra-aware logic to Singine through `singine-collibra/python/singine_collibra/` rather than duplicating it in Singine.</rule>
+      <rule>Keep Singine focused on execution, privileges, orchestration, and general runtime publication concerns.</rule>
+      <rule>Prefer SilkPage for transformation-heavy XML/XSLT/XPath/RDF/TTL/SPARQL/SQL/GraphQL pipelines when that work is not intrinsically Collibra-specific.</rule>
+      <rule>Treat the Collibra metamodel and its governed identifiers as a canonical alignment contract across repositories and agents.</rule>
+    </boundary>
+
+    <change-policy>
+      <rule>Default to adding or updating tests for every functional change.</rule>
+      <rule>Prefer Singine-level tests and MCP-interface tests when the feature is exposed through `singine collibra ...`.</rule>
+      <rule>Update documentation in parallel with code changes: XML model/command docs, OpenAPI descriptions when applicable, man pages, and Markdown pages.</rule>
+      <rule>If tests or documentation are intentionally omitted, explain that explicitly in the final response.</rule>
+      <rule>When a change introduces or modifies a CLI surface, keep command registration, docs/xml, man pages, and Markdown usage examples aligned.</rule>
+    </change-policy>
+
+    <metamodel-policy>
+      <rule>New features should explain how they map to the Collibra metamodel, operating model, assignments, views, or governed identifiers.</rule>
+      <rule>Prefer loading the exported operating-model package from `~/ws/today/metamodel/` when available, and use hand-written fallbacks only as secondary sources.</rule>
+      <rule>Metamodel visualisation, import, and export features should preserve interchangeability with Singine-friendly in-memory opmodel projections.</rule>
+    </metamodel-policy>
+
+    <documentation-sources>
+      <source path="docs/xml/singine-collibra-model.xml">Canonical model narrative</source>
+      <source path="docs/xml/singine-collibra-commands.xml">Canonical command narrative</source>
+      <source path="docs/man/">Generated and maintained man pages</source>
+      <source path="README.md">Human-oriented repository overview</source>
+      <source path="BACKLOG.md">Open implementation gaps and risks</source>
+    </documentation-sources>
+
+    <verification>
+      <rule>Run the smallest meaningful verification for the change, and prefer executable checks over pure inspection.</rule>
+      <rule>For Python changes, at minimum run syntax validation and targeted execution paths when possible.</rule>
+      <rule>For command-surface changes, verify the parser wiring or command output path directly.</rule>
+    </verification>
+  </common>
+
+  <agents>
+    <agent name="codex" output="CODEX.md">
+      <title>CODEX.md - Collibra Repository Contract</title>
+      <intro>
+        This file gives Codex-specific emphasis while inheriting the shared
+        Singine agent contract for the repository.
+      </intro>
+      <specific>
+        <rule>Bias toward implementing the requested change end-to-end, including tests and docs, rather than stopping at design notes.</rule>
+        <rule>When patching code, keep generated command/docs artifacts aligned in the same change whenever feasible.</rule>
+        <rule>Use the shared XML contract as the source of truth for this file and keep agent-specific additions small.</rule>
+      </specific>
+    </agent>
+
+    <agent name="claude" output="CLAUDE.md">
+      <title>CLAUDE.md - Collibra Repository Contract</title>
+      <intro>
+        This file gives Claude-specific emphasis while inheriting the shared
+        Singine agent contract for the repository.
+      </intro>
+      <specific>
+        <rule>Retain higher-level repository walkthrough context, but keep the shared operational contract authoritative.</rule>
+        <rule>When describing a change, include the metamodel and command-surface implications, not just implementation detail.</rule>
+        <rule>Use the shared XML contract as the source of truth for this file and keep agent-specific additions small.</rule>
+      </specific>
+    </agent>
+
+    <agent name="generic" output="AGENTS.md">
+      <title>AGENTS.md - Cross-Agent Contract</title>
+      <intro>
+        This file is the generic entry point for agents and LLM-based tools that
+        do not have their own dedicated repository instruction file yet.
+      </intro>
+      <specific>
+        <rule>Assume the shared 80% contract is mandatory and keep system-specific behavior in a thin compatibility layer.</rule>
+        <rule>New agent integrations should extend the XML contract rather than forking repository policy into unrelated markdown files.</rule>
+      </specific>
+    </agent>
+  </agents>
+</agent-contract>

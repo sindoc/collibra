@@ -1,23 +1,55 @@
-# CODEX.md - Collibra Repository Boundary
+# CODEX.md - Collibra Repository Contract
 
-This repository is the system of record for Collibra-specific code.
+<!-- Generated from docs/xml/singine-agent-contract.xml. -->
 
-Rules:
+This repository is the system of record for Collibra-specific code,
+      metamodel abstractions, operating-model import/export workflows, Edge
+      integrations, and the implementation behind the `singine collibra ...`
+      command family.
 
-1. Implement Collibra REST, SDK, CLI, and Edge logic here.
-2. Expose that logic to Singine through `singine-collibra/python/singine_collibra/` and `COLLIBRA_DIR`
-   discovery rather than duplicating Collibra-aware code in `singine/`.
-3. Keep Singine focused on secure execution, identity, privileges, JVM
-   orchestration, and docs/runtime publication.
-4. Route XML/XSLT/XPath/RDF/TTL/SPARQL/SQL/GraphQL transformation-heavy work
-   toward SilkPage where possible.
-5. Treat the Collibra metamodel and its four-letter codes as a canonical
-   integration contract across repositories.
+This file follows the shared-agent split of approximately 80% common policy and 20% agent-specific guidance.
 
-Practical test:
+This file gives Codex-specific emphasis while inheriting the shared
+        Singine agent contract for the repository.
 
-- If the code depends on Collibra semantics, it belongs here.
-- If the code is generic execution/runtime infrastructure, it belongs in
-  Singine.
-- If the code is primarily cross-format transformation, it belongs in
-  SilkPage.
+## Repository Boundary
+
+- Implement Collibra REST, SDK, CLI, MCP, operating-model, Edge, and tenant-specific governance logic here.
+- Expose Collibra-aware logic to Singine through `singine-collibra/python/singine_collibra/` rather than duplicating it in Singine.
+- Keep Singine focused on execution, privileges, orchestration, and general runtime publication concerns.
+- Prefer SilkPage for transformation-heavy XML/XSLT/XPath/RDF/TTL/SPARQL/SQL/GraphQL pipelines when that work is not intrinsically Collibra-specific.
+- Treat the Collibra metamodel and its governed identifiers as a canonical alignment contract across repositories and agents.
+
+## Change Policy
+
+- Default to adding or updating tests for every functional change.
+- Prefer Singine-level tests and MCP-interface tests when the feature is exposed through `singine collibra ...`.
+- Update documentation in parallel with code changes: XML model/command docs, OpenAPI descriptions when applicable, man pages, and Markdown pages.
+- If tests or documentation are intentionally omitted, explain that explicitly in the final response.
+- When a change introduces or modifies a CLI surface, keep command registration, docs/xml, man pages, and Markdown usage examples aligned.
+
+## Metamodel Alignment
+
+- New features should explain how they map to the Collibra metamodel, operating model, assignments, views, or governed identifiers.
+- Prefer loading the exported operating-model package from `~/ws/today/metamodel/` when available, and use hand-written fallbacks only as secondary sources.
+- Metamodel visualisation, import, and export features should preserve interchangeability with Singine-friendly in-memory opmodel projections.
+
+## Documentation Sources
+
+- `docs/xml/singine-collibra-model.xml`: Canonical model narrative
+- `docs/xml/singine-collibra-commands.xml`: Canonical command narrative
+- `docs/man/`: Generated and maintained man pages
+- `README.md`: Human-oriented repository overview
+- `BACKLOG.md`: Open implementation gaps and risks
+
+## Verification
+
+- Run the smallest meaningful verification for the change, and prefer executable checks over pure inspection.
+- For Python changes, at minimum run syntax validation and targeted execution paths when possible.
+- For command-surface changes, verify the parser wiring or command output path directly.
+
+## Agent-Specific Additions
+
+- Bias toward implementing the requested change end-to-end, including tests and docs, rather than stopping at design notes.
+- When patching code, keep generated command/docs artifacts aligned in the same change whenever feasible.
+- Use the shared XML contract as the source of truth for this file and keep agent-specific additions small.

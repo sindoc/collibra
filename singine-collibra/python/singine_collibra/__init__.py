@@ -2,7 +2,8 @@
 
 This package lives under ``collibra/singine-collibra/python/`` and is
 dynamically imported by the singine CLI when ``singine collibra id``,
-``singine collibra contract``, ``singine collibra io``, or
+``singine collibra contract``, ``singine collibra io``,
+``singine collibra query``, ``singine collibra quantum``, or
 ``singine collibra server`` subcommands are invoked.
 
 The collibra repo is the system-of-record for Collibra-specific implementations.

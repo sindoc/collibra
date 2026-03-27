@@ -252,6 +252,234 @@
           </command>
         </subcommands>
       </command>
+      <command name="create" help="Generate governed import templates and create Collibra resources">
+        <subcommands>
+          <command name="community" help="Create a Collibra community">
+            <options>
+              <option name="--name"/>
+              <option name="-topLevel" metavar="NAME"/>
+              <option name="--top-level" metavar="NAME"/>
+              <option name="--description"/>
+              <option name="--parent-id" metavar="UUID"/>
+              <option name="--json" type="flag"/>
+            </options>
+            <example>singine collibra io create community --name "Data Governance"</example>
+          </command>
+          <command name="template" help="Generate a CSV import template and import view specification from the metamodel and available ViewConfigs">
+            <options>
+              <option name="--name" required="true"/>
+              <option name="--asset-type" required="true"/>
+              <option name="--view-name"/>
+              <option name="--domain-id" metavar="UUID"/>
+              <option name="--location" default="catalog"/>
+              <option name="--scope-attribute" metavar="NAME=VALUE"/>
+              <option name="--attribute" repeatable="true" metavar="ATTRIBUTE[:CSV_HEADER]"/>
+              <option name="--relation" repeatable="true" metavar="SUBJECT:VERB:OBJECT[:CSV_HEADER]"/>
+              <option name="--view-limit" type="int" default="100"/>
+              <option name="--delimiter" default=","/>
+              <option name="--output" metavar="FILE"/>
+              <option name="--metamodel-root" default="~/ws/today/metamodel/reference/current/latest"/>
+            </options>
+            <example>singine collibra io create template --name glossary-import --asset-type "Business Term" --scope-attribute "domain=Finance" --attribute "Definition:definition" --output /tmp/glossary-import.json</example>
+          </command>
+        </subcommands>
+      </command>
+      <command name="metamodel" help="Load, visualize, and export the Collibra metamodel in a Singine-friendly form">
+        <subcommands>
+          <command name="status" help="Summarize the exported Collibra metamodel package on disk">
+            <options>
+              <option name="--root" default="~/ws/today/metamodel/reference/current/latest"/>
+            </options>
+            <example>singine collibra io metamodel status</example>
+          </command>
+          <command name="visualize" help="Visualize one asset type and its assigned relations">
+            <options>
+              <option name="--asset-type" required="true"/>
+              <option name="--root" default="~/ws/today/metamodel/reference/current/latest"/>
+              <option name="--format" default="json"/>
+              <option name="--output" metavar="FILE"/>
+            </options>
+            <example>singine collibra io metamodel visualize --asset-type "Data Notebook" --format mermaid</example>
+          </command>
+          <command name="export" help="Export the metamodel as Singine opmodel JSON or as a CSV import template">
+            <options>
+              <option name="--root" default="~/ws/today/metamodel/reference/current/latest"/>
+              <option name="--format" default="opmodel"/>
+              <option name="--asset-type"/>
+              <option name="--name"/>
+              <option name="--view-name"/>
+              <option name="--domain-id" metavar="UUID"/>
+              <option name="--location" default="catalog"/>
+              <option name="--view-limit" type="int" default="100"/>
+              <option name="--delimiter" default=","/>
+              <option name="--output" metavar="FILE"/>
+            </options>
+            <example>singine collibra io metamodel export --format opmodel --asset-type "Business Term" --output /tmp/business-term-opmodel.json</example>
+          </command>
+        </subcommands>
+      </command>
+      <command name="edge" help="Collibra Edge I/O workflows">
+        <subcommands>
+          <command name="connection" help="Inspect and preflight Edge connections before using the Collibra UI">
+            <subcommands>
+              <command name="probe-postgres" help="Preflight a PostgreSQL-backed Edge connection from the workstation and the live Edge runtime">
+                <options>
+                  <option name="--name" default="sindoc-singine-pg-dev-101"/>
+                  <option name="--connection-id"/>
+                  <option name="--container" default="singine-pg-dev-101"/>
+                  <option name="--edge-host" default="host.docker.internal"/>
+                  <option name="--local-host" default="127.0.0.1"/>
+                  <option name="--port" type="int" default="5433"/>
+                  <option name="--database" default="postgres"/>
+                  <option name="--user" default="postgres"/>
+                  <option name="--password" default="postgres"/>
+                  <option name="--driver-version" default="42.7.4"/>
+                  <option name="--namespace" default="collibra-edge"/>
+                  <option name="--component" default="edge-controller"/>
+                  <option name="--json" type="flag"/>
+                </options>
+                <example>singine collibra io edge connection probe-postgres --json</example>
+              </command>
+            </subcommands>
+          </command>
+          <command name="datasource" help="Diagnose datasource wiring between Collibra and the Edge runtime">
+            <subcommands>
+              <command name="diagnose" help="Diagnose why a datasource is not resolving to a runnable Edge capability">
+                <options>
+                  <option name="--id" required="true" metavar="UUID"/>
+                  <option name="--namespace" default="collibra-edge"/>
+                  <option name="--component" default="edge-controller"/>
+                  <option name="--tail" type="int" default="600"/>
+                  <option name="--json" type="flag"/>
+                </options>
+                <example>singine collibra io edge datasource diagnose --id DATASOURCE-UUID --json</example>
+              </command>
+            </subcommands>
+          </command>
+        </subcommands>
+      </command>
+    </commands>
+  </component>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- QUERY                                                                   -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <component name="query" help="CHIP MCP query DSL helpers and persistence bridge probes">
+    <description>
+      Exposes the Python CHIP query DSL defined in docs/xml/chip-queries.xml.
+      Covers workspace-depth lookup, typed retrieval, HTTP-compatible gRPC bridge
+      inspection, and JProfiler target discovery for Groovy and Clojure JVMs.
+    </description>
+    <implementation>singine-collibra/python/singine_collibra/chip_queries.py</implementation>
+
+    <commands>
+      <command name="status" help="Show chip query grammar and RPC binding status">
+        <options><option name="--json" type="flag"/></options>
+        <example>singine collibra query status --json</example>
+      </command>
+
+      <command name="jprofiler-targets" help="Discover Groovy and Clojure JVM attach targets">
+        <options>
+          <option name="--agent-path" default="/opt/jprofiler/bin/linux-x64/libjprofilerti.so"/>
+          <option name="--json" type="flag"/>
+        </options>
+        <example>singine collibra query jprofiler-targets --json</example>
+      </command>
+
+      <command name="grpc-bindings" help="List HTTP-transcoded persistence RPC bindings">
+        <options><option name="--json" type="flag"/></options>
+        <example>singine collibra query grpc-bindings</example>
+      </command>
+
+      <command name="code-lookup" help="Run a CHIP code lookup against the configured workspace">
+        <args>
+          <arg name="term" required="true" help="Search term"/>
+        </args>
+        <options>
+          <option name="--scope"/>
+          <option name="--depth" default="self" choices="self,+,++,+++,++++,+++++"/>
+          <option name="--json" type="flag"/>
+        </options>
+        <example>singine collibra query code-lookup "elia electricity domain" --depth +++ --json</example>
+      </command>
+
+      <command name="type-retrieval" help="Run a typed CHIP code lookup projection">
+        <args>
+          <arg name="term" required="true" help="Search term"/>
+        </args>
+        <options>
+          <option name="--scope"/>
+          <option name="--depth" default="self" choices="self,+,++,+++,++++,+++++"/>
+          <option name="--json" type="flag"/>
+        </options>
+        <example>singine collibra query type-retrieval "Business Term" --json</example>
+      </command>
+
+      <command name="grpc-http-call" help="Invoke a persistence RPC via the HTTP bridge">
+        <args>
+          <arg name="rpc" required="true" choices="GenId,QueryLineage,ShortestPath,Categorise,Similarity,Migrate"/>
+        </args>
+        <options>
+          <option name="--body" default="{}"/>
+          <option name="--base-url" default="http://127.0.0.1:9090"/>
+          <option name="--grpc-port" type="int" default="50051"/>
+          <option name="--native-grpc" type="flag"/>
+          <option name="--json" type="flag"/>
+        </options>
+        <example>singine collibra query grpc-http-call GenId --body '{"namespace":"c"}' --json</example>
+      </command>
+    </commands>
+  </component>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- QUANTUM                                                                 -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <component name="quantum" help="Quantum catalog, code-table, cosine, and BubbleLeader helpers">
+    <description>
+      Exposes the symbolic quantum-catalog helpers built for the CHIP query
+      surface, including Shiva base-layer code tables, the cosine-resolution
+      fluent chain, and the full BubbleLeader symbolic pipeline.
+    </description>
+    <implementation>singine-collibra/python/singine_collibra/quantum_catalog.py</implementation>
+
+    <commands>
+      <command name="status" help="Show quantum catalog artifact and code-table status">
+        <options><option name="--json" type="flag"/></options>
+        <example>singine collibra quantum status --json</example>
+      </command>
+
+      <command name="load-shiva" help="Load the in-memory Shiva base-layer code table">
+        <options>
+          <option name="--db" default="/tmp/humble-idp.db"/>
+          <option name="--json" type="flag"/>
+        </options>
+        <example>singine collibra quantum load-shiva --json</example>
+      </command>
+
+      <command name="refdata" help="Look up a single Shiva code-table entry">
+        <args>
+          <arg name="code" required="true" help="Code table key such as AAAA or FFFFF"/>
+        </args>
+        <options><option name="--json" type="flag"/></options>
+        <example>singine collibra quantum refdata AAAA --json</example>
+      </command>
+
+      <command name="cosine" help="Run the complex cosine to Collibra fluent chain">
+        <options>
+          <option name="--u" required="true" help="Comma-separated complex vector"/>
+          <option name="--v" required="true" help="Comma-separated complex vector"/>
+          <option name="--json" type="flag"/>
+        </options>
+        <example>singine collibra quantum cosine --u 1+0j,0+1j --v 1+0j,1+0j --json</example>
+      </command>
+
+      <command name="bubble-leader" help="Run the full BubbleLeader symbolic chain">
+        <args>
+          <arg name="items" multiple="true" help="Items to bubble-sort before building the chain"/>
+        </args>
+        <options><option name="--json" type="flag"/></options>
+        <example>singine collibra quantum bubble-leader 9 1 5 7 --json</example>
+      </command>
     </commands>
   </component>
 

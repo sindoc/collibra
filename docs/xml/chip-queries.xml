@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  chip-queries.xml
+  XML grammar for the Collibra CHIP MCP query surface.
+
+  This document is the system-of-design (lang=XML.g()) for chip MCP queries.
+  Go code reads this document and generates typed query structures.
+  Python consumes the vocabulary via singine_collibra/chip_queries.py.
+  JProfiler targets (Groovy + Clojure) are declared here for Go discovery.
+
+  Follows the Elia/Collibra XML modelling conventions from CLAUDE.md.
+  Protocol: JSON-RPC 2.0 over stdio (MCP 2025-03-26).
+-->
+<chip-query-grammar version="1.0" generated="2026-03-26"
+                    protocol="mcp/2025-03-26"
+                    entry-point="Go lang=XML.g()">
+
+  <description>
+    Grammar for ~ws(self, ...+ ++ +++ ++++ +++++)/codeLookup().lambda().exec().tryCatchClaude
+    with type retrieval, HTTP-compatible gRPC function calls, and JProfiler
+    attachment to Groovy and Clojure JVM processes.
+  </description>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- WORKSPACE TRAVERSAL DEPTHS: ~ws(self, + ++ +++ ++++ +++++)             -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <workspace-depths root="~/ws">
+    <depth id="self"   level="0" symbol="self"   description="Workspace root only"/>
+    <depth id="d1"     level="1" symbol="+"      description="Immediate children"/>
+    <depth id="d2"     level="2" symbol="++"     description="Two levels deep"/>
+    <depth id="d3"     level="3" symbol="+++"    description="Three levels deep"/>
+    <depth id="d4"     level="4" symbol="++++"   description="Four levels deep"/>
+    <depth id="d5"     level="5" symbol="+++++"  description="Full recursive traversal"/>
+  </workspace-depths>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- MCP QUERY TYPES: codeLookup().lambda().exec().tryCatchClaude           -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <query-types>
+
+    <!-- codeLookup() — resolve a Collibra asset or code type by term -->
+    <query-type id="code-lookup"
+                tool="collibra/code_lookup"
+                chain="codeLookup().lambda().exec().tryCatchClaude">
+      <description>
+        Look up a Collibra asset, business term, or code type by search term.
+        Supports workspace-depth-scoped traversal.
+      </description>
+      <input>
+        <field name="term"      type="string"  required="true"
+               description="Search term — business name, IRI fragment, or code"/>
+        <field name="depth"     type="int"     required="false" default="0"
+               description="Workspace traversal depth (0=self … 5=full)"/>
+        <field name="scope"     type="string"  required="false"
+               description="Optional Collibra community or domain scope filter"/>
+      </input>
+      <output>
+        <field name="type_iri"    type="string" description="Collibra asset IRI"/>
+        <field name="type_name"   type="string" description="Display name"/>
+        <field name="collibra_id" type="string" description="Collibra UUID"/>
+        <field name="asset_type"  type="string" description="Collibra asset type"/>
+        <field name="fragments"   type="list"   description="Related IRI fragments"/>
+      </output>
+      <error-recovery strategy="tryCatchClaude">
+        <action>Emit MCP-compatible error envelope; delegate re-evaluation to Claude session.</action>
+      </error-recovery>
+    </query-type>
+
+    <!-- type-retrieval — fetch full type definition from Collibra -->
+    <query-type id="type-retrieval"
+                tool="collibra/type_retrieve"
+                chain="typeRetrieval()">
+      <description>
+        Retrieve the full type definition (properties, relations) for a Collibra asset IRI.
+      </description>
+      <input>
+        <field name="type_iri"  type="string"  required="true"/>
+        <field name="include"   type="list"    required="false"
+               description="Subset of fields: properties, relations, statements"/>
+      </input>
+      <output>
+        <field name="iri"        type="string"/>
+        <field name="properties" type="map"/>
+        <field name="relations"  type="list"/>
+      </output>
+    </query-type>
+
+    <!-- lambda-exec — deferred lambda execution envelope -->
+    <query-type id="lambda-exec"
+                tool="collibra/lambda_exec"
+                chain="lambda().exec()">
+      <description>
+        Wrap any chip MCP tool call in a deferred lambda and execute it.
+        Catches exceptions and forwards to tryCatchClaude.
+      </description>
+      <input>
+        <field name="fn_id"   type="string"  required="true"
+               description="Registered lambda/tool identifier"/>
+        <field name="args"    type="map"     required="false"/>
+      </input>
+      <output>
+        <field name="result"  type="any"/>
+        <field name="ok"      type="bool"/>
+        <field name="error"   type="string"/>
+      </output>
+    </query-type>
+
+  </query-types>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- gRPC-HTTP TRANSCODING: HTTP-compatible gRPC (grpc-gateway style)       -->
+  <!-- Service: singine.persistence.v1 (proto: uniWork/persistence/proto/)    -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <grpc-http-bindings
+      service="singine.persistence.v1"
+      proto="uniWork/persistence/proto/persistence.proto"
+      go-package="github.com/sindoc/collibra/persistence/v1"
+      grpc-port="50051"
+      http-port="9090">
+
+    <binding rpc="GenId"        http-method="POST" http-path="/v1/id/gen"
+             content-type="application/json"
+             description="Mint a new namespaced ID"/>
+    <binding rpc="QueryLineage" http-method="GET"  http-path="/v1/lineage/{commit_sha}"
+             content-type="application/json"
+             description="Query lineage for a commit SHA"/>
+    <binding rpc="ShortestPath" http-method="POST" http-path="/v1/path"
+             content-type="application/json"
+             description="Shortest-path (Dijkstra+quicksort) between two entities"/>
+    <binding rpc="Categorise"   http-method="POST" http-path="/v1/category"
+             content-type="application/json"
+             description="Categorise an entity"/>
+    <binding rpc="Similarity"   http-method="POST" http-path="/v1/similarity"
+             content-type="application/json"
+             description="Compute similarity between two entities"/>
+    <binding rpc="Migrate"      http-method="POST" http-path="/v1/migrate"
+             content-type="application/json"
+             description="Run schema migration"/>
+
+  </grpc-http-bindings>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- JPROFILER TARGETS: Groovy + Clojure JVM processes                      -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <jprofiler-targets agent-port="8849">
+
+    <target id="groovy-process"
+            runtime="groovy"
+            attach="pid-discovery"
+            main-class-pattern="groovy.ui.GroovyMain|org.codehaus.groovy|groovy"
+            config-key="chip.profiler.groovy"
+            snapshot-dir="/tmp/jprofiler-groovy"
+            implementation="uniWork/persistence/groovy/JProfilerAttach.groovy"/>
+
+    <target id="clojure-process"
+            runtime="clojure"
+            attach="pid-discovery"
+            main-class-pattern="clojure.main|singine.persistence.core"
+            config-key="chip.profiler.clojure"
+            snapshot-dir="/tmp/jprofiler-clojure"
+            implementation="uniWork/persistence/clojure/src/persistence/jprofiler.clj"/>
+
+  </jprofiler-targets>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- GO CODE GENERATION TARGETS (lang=XML.g())                              -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <go-codegen
+      package="chipqueries"
+      output="uniWork/persistence/go/chip_queries.go"
+      proto-go-package="github.com/sindoc/collibra/persistence/v1">
+    <generates>WorkspaceDepth, CodeLookupRequest, TypeRetrievalRequest,
+               GrpcHttpRequest, JProfilerTarget, ChipQueryGrammar</generates>
+  </go-codegen>
+
+</chip-query-grammar>

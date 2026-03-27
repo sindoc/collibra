@@ -65,6 +65,14 @@ The Collibra metamodel and its four-letter codes are treated as a canonical
 integration contract across `collibra`, `singine`, `silkpage`, and Edge-facing
 components.
 
+The first published command-contract set for HTTP and protocol tooling starts
+with `singine collibra io`:
+
+- XML source: `docs/xml/singine-collibra-commands.xml`
+- Markdown guide: `docs/collibra-io-commands.md`
+- OpenAPI: `schema/singine-collibra-io-api.json`
+- SinLisp: `runtime/sinlisp/collibra_io.sinlisp`
+
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │                    singine collibra CLI                          │

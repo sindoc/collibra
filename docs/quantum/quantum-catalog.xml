@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  quantum-catalog.xml
+  XML catalog: quantum redefinition of stack/queue + cosine similarity chain.
+  Follows chip-queries.xml grammar (docs/xml/chip-queries.xml, lang=XML.g()).
+
+  MathML embedded inline for each symbolic entity.
+  DCAT / SKOS / SBVR / PROV-O / OWL annotations follow governance/vocab_alignment.json.
+  Collibra asset references use assetType + placeholder collibraId.
+-->
+<quantum-catalog
+    version="1.0"
+    generated="2026-03-26"
+    xmlns:math="http://www.w3.org/1998/Math/MathML"
+    xmlns:dcat="http://www.w3.org/ns/dcat#"
+    xmlns:skos="http://www.w3.org/2004/02/skos/core#"
+    xmlns:prov="http://www.w3.org/ns/prov#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:sbvr="urn:singine:sbvr:"
+    xmlns:odrl="http://www.w3.org/ns/odrl/2/"
+    xmlns:dc="http://purl.org/dc/elements/1.1/">
+
+  <dc:title>Quantum Catalog — Stack, Queue, Cosine on ℂ</dc:title>
+  <dc:creator>Singine Collibra — chip-queries.xml</dc:creator>
+  <dc:date>2026-03-26</dc:date>
+  <dc:description>
+    cosine().similarity().complex().resolve().xml().catalog().collibra()
+    dirac() · einstein() · knuth() · tex() · latex() · jd()
+    loadCodeTableFromBaseFromShiva() · bubbleLeader()...paulGraham()
+  </dc:description>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- CODE TABLES: AAAA … FFFFF (loadCodeTableFromBaseFromShiva)             -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <code-tables source="urn:singine:base:shiva">
+
+    <entry code="AAAA" label="Axiom Alpha" domain="Mathematics"
+           sbvr="sbvr:Fact" collibra-asset-type="Business Term" collibra-id="">
+      <math:math><math:mi>&#x1D540;</math:mi><math:mo>&#x22A2;</math:mo><math:mi>&#x3C3;</math:mi></math:math>
+      <!-- ⊢σ: provability axiom -->
+    </entry>
+
+    <entry code="BBBB" label="Basis Bundle Beta" domain="Quantum"
+           sbvr="sbvr:Term" collibra-asset-type="Data Element" collibra-id="">
+      <math:math>
+        <math:mrow><math:mo>|</math:mo><math:mi>&#x3C8;</math:mi><math:mo>&#x27E9;</math:mo>
+        <math:mo>=</math:mo>
+        <math:munder><math:mo>&#x2211;</math:mo><math:mi>k</math:mi></math:munder>
+        <math:msub><math:mi>&#x3B1;</math:mi><math:mi>k</math:mi></math:msub>
+        <math:mo>|</math:mo><math:mi>k</math:mi><math:mo>&#x27E9;</math:mo>
+        </math:mrow>
+      </math:math>
+      <!-- |ψ⟩ = Σ αₖ|k⟩ -->
+    </entry>
+
+    <entry code="CCCC" label="Catalog Code Collibra" domain="Collibra"
+           sbvr="odrl:Agreement" collibra-asset-type="Data Asset" collibra-id="">
+      <math:math>
+        <math:mrow><math:mi>refData</math:mi><math:mo>(</math:mo>
+        <math:mi>c</math:mi><math:mo>)</math:mo>
+        <math:mo>&#x2192;</math:mo>
+        <math:mi>assetId</math:mi></math:mrow>
+      </math:math>
+    </entry>
+
+    <entry code="DDDD" label="Dirac Domain Delta" domain="Physics"
+           sbvr="prov:Entity" collibra-asset-type="Data Set" collibra-id="">
+      <math:math>
+        <math:mrow>
+          <math:mi>&#x3B4;</math:mi><math:mo>(</math:mo><math:mi>x</math:mi>
+          <math:mo>&#x2212;</math:mo><math:msub><math:mi>x</math:mi><math:mn>0</math:mn></math:msub>
+          <math:mo>)</math:mo>
+          <math:mo>=</math:mo>
+          <math:munder><math:mo>lim</math:mo><math:mrow><math:mi>&#x3B5;</math:mi><math:mo>&#x2192;</math:mo><math:mn>0</math:mn></math:mrow></math:munder>
+          <math:mfrac>
+            <math:mn>1</math:mn>
+            <math:mrow><math:mi>&#x3B5;</math:mi><math:msqrt><math:mi>&#x3C0;</math:mi></math:msqrt></math:mrow>
+          </math:mfrac>
+          <math:msup><math:mi>e</math:mi>
+            <math:mrow><math:mo>&#x2212;</math:mo>
+              <math:msup><math:mrow><math:mo>(</math:mo><math:mi>x</math:mi><math:mo>&#x2212;</math:mo>
+              <math:msub><math:mi>x</math:mi><math:mn>0</math:mn></math:msub><math:mo>)</math:mo></math:mrow>
+              <math:mn>2</math:mn></math:msup>
+              <math:mo>/</math:mo><math:msup><math:mi>&#x3B5;</math:mi><math:mn>2</math:mn></math:msup>
+            </math:mrow>
+          </math:msup>
+        </math:mrow>
+      </math:math>
+    </entry>
+
+    <entry code="EEEE" label="Einstein Epsilon Energy" domain="Relativity"
+           sbvr="owl:Class" collibra-asset-type="Business Process" collibra-id="">
+      <math:math>
+        <math:mrow>
+          <math:msub><math:mi>G</math:mi><math:mrow><math:mi>&#x3BC;</math:mi><math:mi>&#x3BD;</math:mi></math:mrow></math:msub>
+          <math:mo>+</math:mo>
+          <math:mi>&#x39B;</math:mi>
+          <math:msub><math:mi>g</math:mi><math:mrow><math:mi>&#x3BC;</math:mi><math:mi>&#x3BD;</math:mi></math:mrow></math:msub>
+          <math:mo>=</math:mo>
+          <math:mfrac>
+            <math:mrow><math:mn>8</math:mn><math:mi>&#x3C0;</math:mi><math:mi>G</math:mi></math:mrow>
+            <math:msup><math:mi>c</math:mi><math:mn>4</math:mn></math:msup>
+          </math:mfrac>
+          <math:msub><math:mi>T</math:mi><math:mrow><math:mi>&#x3BC;</math:mi><math:mi>&#x3BD;</math:mi></math:mrow></math:msub>
+        </math:mrow>
+      </math:math>
+    </entry>
+
+    <entry code="FFFFF" label="Formal Field Fiber" domain="Category Theory"
+           sbvr="skos:Concept" collibra-asset-type="Reference Data" collibra-id="">
+      <math:math>
+        <math:mrow>
+          <math:mi>Y</math:mi><math:mo>=</math:mo>
+          <math:mi>&#x3BB;</math:mi><math:mi>f</math:mi><math:mo>.</math:mo>
+          <math:mo>(</math:mo><math:mi>&#x3BB;</math:mi><math:mi>x</math:mi><math:mo>.</math:mo>
+          <math:mi>f</math:mi><math:mo>(</math:mo><math:mi>x</math:mi><math:mi>x</math:mi><math:mo>)</math:mo><math:mo>)</math:mo>
+          <math:mo>(</math:mo><math:mi>&#x3BB;</math:mi><math:mi>x</math:mi><math:mo>.</math:mo>
+          <math:mi>f</math:mi><math:mo>(</math:mo><math:mi>x</math:mi><math:mi>x</math:mi><math:mo>)</math:mo><math:mo>)</math:mo>
+        </math:mrow>
+      </math:math>
+      <!-- Y-combinator (Escher/Gödel) -->
+    </entry>
+
+  </code-tables>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- QUANTUM STACK                                                           -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <quantum-stack collibra-asset-type="Data Set" collibra-id="">
+    <description>Stack as quantum superposition |S⟩ = Σ αₖ|k⟩, αₖ ∈ ℂ</description>
+    <operators>
+      <operator name="push" symbol="â†" latex="\hat{a}^\dagger">
+        <action>â†|n⟩ = √(n+1)|n+1⟩ — creation operator</action>
+        <math:math>
+          <math:mrow>
+            <math:msup><math:mover><math:mi>a</math:mi><math:mo>^</math:mo></math:mover><math:mo>&#x2020;</math:mo></math:msup>
+            <math:mo>|</math:mo><math:mi>n</math:mi><math:mo>&#x27E9;</math:mo>
+            <math:mo>=</math:mo>
+            <math:msqrt><math:mrow><math:mi>n</math:mi><math:mo>+</math:mo><math:mn>1</math:mn></math:mrow></math:msqrt>
+            <math:mo>|</math:mo><math:mrow><math:mi>n</math:mi><math:mo>+</math:mo><math:mn>1</math:mn></math:mrow><math:mo>&#x27E9;</math:mo>
+          </math:mrow>
+        </math:math>
+      </operator>
+      <operator name="pop" symbol="â" latex="\hat{a}">
+        <action>â|n⟩ = √n|n−1⟩ — annihilation operator; â|0⟩ = 0</action>
+      </operator>
+      <operator name="number" symbol="N̂" latex="\hat{N}">
+        <action>N̂|n⟩ = n|n⟩; [â, â†] = 1̂</action>
+      </operator>
+    </operators>
+    <complexity classical="O(1)" quantum="O(1)"/>
+  </quantum-stack>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- QUANTUM QUEUE                                                           -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <quantum-queue collibra-asset-type="Data Set" collibra-id="">
+    <description>Queue as density matrix ρ_Q = Σᵢ pᵢ|ψᵢ⟩⟨ψᵢ|</description>
+    <operators>
+      <operator name="enqueue" symbol="Ê†">
+        <action>U_enq ρ_Q U_enq† ⊗ |new⟩⟨new|</action>
+      </operator>
+      <operator name="dequeue" symbol="Tr₁">
+        <action>Tr₁[ρ_Q] — partial trace over first register</action>
+      </operator>
+    </operators>
+    <complexity classical="O(1)" quantum="O(1)"/>
+    <grover-search classical="O(n)" quantum="O(√n)"/>
+    <quantum-bubble-sort classical="O(n²)" quantum="O(n^{3/2})"/>
+  </quantum-queue>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- COSINE SIMILARITY CHAIN                                                 -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <cosine-similarity-chain
+      collibra-asset-type="Metric" collibra-id=""
+      svg="docs/quantum/complex-plane.svg"
+      python="singine_collibra.quantum_catalog.CosineChain">
+
+    <formula latex="\cossim(\mathbf{u},\mathbf{v}) = \frac{\operatorname{Re}(\langle\mathbf{u},\mathbf{v}\rangle)}{|\mathbf{u}||\mathbf{v}|}">
+      <math:math>
+        <math:mrow>
+          <math:mi>cos_sim</math:mi>
+          <math:mo>(</math:mo><math:mi mathvariant="bold">u</math:mi>
+          <math:mo>,</math:mo><math:mi mathvariant="bold">v</math:mi><math:mo>)</math:mo>
+          <math:mo>=</math:mo>
+          <math:mfrac>
+            <math:mrow><math:mi>Re</math:mi>
+              <math:mo>&#x27E8;</math:mo><math:mi mathvariant="bold">u</math:mi>
+              <math:mo>,</math:mo><math:mi mathvariant="bold">v</math:mi>
+              <math:mo>&#x27E9;</math:mo>
+            </math:mrow>
+            <math:mrow>
+              <math:mo>|</math:mo><math:mi mathvariant="bold">u</math:mi><math:mo>|</math:mo>
+              <math:mo>&#x22C5;</math:mo>
+              <math:mo>|</math:mo><math:mi mathvariant="bold">v</math:mi><math:mo>|</math:mo>
+            </math:mrow>
+          </math:mfrac>
+          <math:mo>&#x2208;</math:mo><math:mo>[</math:mo><math:mn>-1</math:mn><math:mo>,</math:mo><math:mn>1</math:mn><math:mo>]</math:mo>
+        </math:mrow>
+      </math:math>
+    </formula>
+
+    <euler-identity latex="e^{i\pi}+1=0">
+      <math:math>
+        <math:mrow>
+          <math:msup><math:mi>e</math:mi>
+            <math:mrow><math:mi>i</math:mi><math:mi>&#x3C0;</math:mi></math:mrow>
+          </math:msup>
+          <math:mo>+</math:mo><math:mn>1</math:mn><math:mo>=</math:mo><math:mn>0</math:mn>
+        </math:mrow>
+      </math:math>
+    </euler-identity>
+
+    <chain-steps>
+      <step n="1" fn="cosine(u,v)"     output="cos θ ∈ ℂ"/>
+      <step n="2" fn="similarity()"    output="threshold + ranked candidates"/>
+      <step n="3" fn="complex()"       output="embed in ℂⁿ, compute arg(z)"/>
+      <step n="4" fn="resolve()"       output="angle θ → Collibra IRI"/>
+      <step n="5" fn="xml()"           output="serialize as chip-queries.xml node"/>
+      <step n="6" fn="catalog()"       output="insert into DCAT catalog graph"/>
+      <step n="7" fn="collibra()"      output="POST /assets to Collibra REST"/>
+    </chain-steps>
+
+  </cosine-similarity-chain>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- BUBBLE LEADER CHAIN                                                     -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <bubble-leader-chain
+      collibra-asset-type="Business Process" collibra-id=""
+      python="singine_collibra.quantum_catalog.BubbleLeaderChain">
+    <description>
+      Ξ = bubbleLeader ∘ builder ∘ piotr ∘ groovy ∘ clojure ∘ c ∘ f
+            ∘ math ∘ godel ∘ escher ∘ pg ∘ pg ∘ paulGraham
+    </description>
+    <monad>x &gt;&gt;= bubbleLeader &gt;&gt;= builder &gt;&gt;= ... &gt;&gt;= paulGraham</monad>
+    <godel-formula latex="\gonum{\Xi} = \prod_j p_j^{a_j}">
+      Gödel number: ⌈Ξ⌉ = Π pⱼ^aⱼ — incompleteness invariant: ⌈Ξ⌉ ∉ Ξ
+    </godel-formula>
+    <escher-combinator latex="Y = \lambda f.(\lambda x.f(xx))(\lambda x.f(xx))">
+      Y f = f(Y f) = f(f(f(⋯))) — Escher drawing-hands fixed point
+    </escher-combinator>
+    <paulgraham-thesis>Succinctness is power.</paulgraham-thesis>
+    <layers>
+      <layer fn="bubbleLeader" type="Selector"    lang="any"     role="Float max to top; quantum oracle â†|max⟩"/>
+      <layer fn="builder"      type="Factory"     lang="GoF"     role="Accumulate config"/>
+      <layer fn="piotr"        type="Orchestrator" lang="multi"  role="Cross-language coordination"/>
+      <layer fn="groovy"       type="DSL"         lang="groovy"  role="JVM DSL; JProfiler: chip.profiler.groovy"/>
+      <layer fn="clojure"      type="Functional"  lang="clojure" role="Pure-function pass; persistence.core"/>
+      <layer fn="c"            type="Native"      lang="c"       role="Zero-copy, cache-aligned structs"/>
+      <layer fn="f"            type="Algebraic"   lang="fp"      role="F-algebra / fixed-point functor μF"/>
+      <layer fn="math"         type="Symbolic"    lang="sympy"   role="Symbolic algebra; SymPy / Mathematica"/>
+      <layer fn="godel"        type="Meta"        lang="logic"   role="Gödel encoding; self-reference invariant"/>
+      <layer fn="escher"       type="Fractal"     lang="lambda"  role="Y-combinator; visual tiling"/>
+      <layer fn="pg"           type="SQL"         lang="sql"     role="PostgreSQL query layer"/>
+      <layer fn="pg"           type="LISP"        lang="arc"     role="Paul Graham — Arc/LISP wisdom pass"/>
+      <layer fn="paulGraham"   type="Terminal"    lang="lisp"    role="eval(e, nil) — 7 LISP primitives"/>
+    </layers>
+  </bubble-leader-chain>
+
+</quantum-catalog>
