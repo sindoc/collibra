@@ -766,4 +766,297 @@
     </commands>
   </component>
 
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- REPO                                                                    -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <component name="repo" help="Repository discovery, daily commit, and cron scheduling">
+    <description>
+      Discovers local and remote git repositories, stages and commits dirty
+      repos on a schedule, and manages the crontab entry that drives the
+      daily-commit workflow.  Notification is delegated to the notify component.
+    </description>
+    <implementation>singine-collibra/python/singine_collibra/repo.py</implementation>
+
+    <commands>
+
+      <command name="find" help="Scan local filesystem for git repos">
+        <options>
+          <option name="--root"  default="~/ws" help="Search root directory"/>
+          <option name="--depth" type="int" default="4" help="Max directory depth"/>
+          <option name="--json"  type="flag"/>
+        </options>
+        <example>singine collibra repo find --root ~/projects --depth 3</example>
+      </command>
+
+      <command name="remote" help="List remote repos via REST API">
+        <options>
+          <option name="--provider" choices="github,gitlab" default="github"/>
+          <option name="--org"      metavar="ORG" help="Organisation / group (omit for authenticated user)"/>
+          <option name="--token"    metavar="TOKEN" help="API token (falls back to GITHUB_TOKEN)"/>
+          <option name="--json"     type="flag"/>
+        </options>
+        <example>singine collibra repo remote --provider github --org sindoc</example>
+      </command>
+
+      <command name="status" help="Show dirty/clean state of all discovered repos">
+        <options>
+          <option name="--root"  default="~/ws"/>
+          <option name="--depth" type="int" default="4"/>
+          <option name="--json"  type="flag"/>
+        </options>
+        <example>singine collibra repo status --json</example>
+      </command>
+
+      <command name="daily-commit" help="Stage and commit all dirty repos under --root">
+        <options>
+          <option name="--root"    default="~/ws"/>
+          <option name="--depth"   type="int" default="4"/>
+          <option name="--message" default="chore: scheduled daily commit [singine-collibra]"/>
+          <option name="--dry-run" type="flag"/>
+          <option name="--push"    type="flag" help="git push after each commit"/>
+          <option name="--json"    type="flag"/>
+        </options>
+        <example>singine collibra repo daily-commit --dry-run</example>
+        <example>singine collibra repo daily-commit --push --json</example>
+      </command>
+
+      <command name="schedule" help="Manage the daily-commit cron entry">
+        <subcommands>
+          <subcommand name="install" help="Install crontab entry">
+            <options>
+              <option name="--root"         default="~/ws"/>
+              <option name="--hour"         type="int" default="23" help="UTC hour (0-23)"/>
+              <option name="--notify-email" metavar="ADDR" help="Address for commit summary email"/>
+              <option name="--push"         type="flag"/>
+              <option name="--json"         type="flag"/>
+            </options>
+            <example>singine collibra repo schedule install --hour 22 --notify-email ops@example.com</example>
+          </subcommand>
+          <subcommand name="remove" help="Remove the daily-commit crontab entry">
+            <example>singine collibra repo schedule remove</example>
+          </subcommand>
+          <subcommand name="status" help="Show current cron schedule status">
+            <example>singine collibra repo schedule status --json</example>
+          </subcommand>
+        </subcommands>
+      </command>
+
+    </commands>
+  </component>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- NOTIFY                                                                  -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <component name="notify" help="SMTP email via Docker edge instance with Markupware envelope">
+    <description>
+      Routes email through the smtpAgent Clojure service hosted in the Docker
+      edge stack.  All outbound HTTP requests are signed with the Markupware
+      security envelope (X-Markupware-Signature / X-Markupware-Context headers).
+      Transport channel is selected automatically by the secure component.
+    </description>
+    <implementation>singine-collibra/python/singine_collibra/notify.py</implementation>
+    <env-vars>
+      <var name="SMTP_SERVICE_URL"      default="http://127.0.0.1:8026"/>
+      <var name="SINGINE_EDGE_HOST"     help="Docker edge hostname for smtpAgent"/>
+      <var name="SINGINE_NOTIFY_FROM"   default="singine@localhost"/>
+      <var name="MARKUPWARE_SECRET_KEY" help="HMAC key for envelope signing"/>
+      <var name="SINGINE_ENV"           choices="dev,staging,prod"/>
+    </env-vars>
+
+    <commands>
+
+      <command name="email" help="Send email through the edge smtpAgent service">
+        <options>
+          <option name="--to"      required="true" metavar="ADDR"/>
+          <option name="--subject" required="true"/>
+          <option name="--body"    help="Plain-text body (or use --stdin)"/>
+          <option name="--stdin"   type="flag" help="Read body from stdin"/>
+          <option name="--from"    metavar="ADDR" help="Sender address"/>
+          <option name="--dry-run" type="flag"/>
+          <option name="--context" help="SDLC context label for Markupware headers"/>
+          <option name="--json"    type="flag"/>
+        </options>
+        <example>singine collibra notify email --to ops@example.com --subject "Deploy ok" --body "All clear"</example>
+        <example>singine collibra repo daily-commit --json | singine collibra notify email --to ops@example.com --subject "Daily commit $(date +%F)" --stdin</example>
+      </command>
+
+      <command name="status" help="Health check of the smtpAgent service">
+        <example>singine collibra notify status --json</example>
+      </command>
+
+      <command name="configure" help="Show or validate notification configuration">
+        <options>
+          <option name="--smtp-url"   help="Override smtpAgent endpoint URL"/>
+          <option name="--edge-host"  help="Docker edge host for smtpAgent"/>
+          <option name="--from"       metavar="ADDR" help="Default from address"/>
+          <option name="--json"       type="flag"/>
+        </options>
+        <example>singine collibra notify configure --edge-host edge-site --json</example>
+      </command>
+
+    </commands>
+  </component>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- SECURE                                                                  -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <component name="secure" help="Context-aware secure transport: TLS, SSH tunnel, WireGuard VPN">
+    <description>
+      Detects the current device / network context and selects the appropriate
+      secure channel.  Context signals: SINGINE_ENV, hostname suffix, Docker
+      socket presence, WireGuard interface presence, SSH_AUTH_SOCK.
+
+      Transport selection:
+        dev / local   → direct-tls  (OpenSSL verify)
+        staging       → ssh-tunnel  (through edge CDN container)
+        prod          → wireguard   (wg-quick / wg show)
+        unknown       → markupware-proxy (safe fallback via markupware.com)
+    </description>
+    <implementation>singine-collibra/python/singine_collibra/secure.py</implementation>
+    <env-vars>
+      <var name="SINGINE_ENV"          choices="dev,staging,prod"/>
+      <var name="SINGINE_EDGE_HOST"    help="Edge CDN hostname"/>
+      <var name="SSH_AUTH_SOCK"        help="SSH agent socket (staging tunnel capable)"/>
+      <var name="MARKUPWARE_SECRET_KEY" help="HMAC key shared with notify.py"/>
+    </env-vars>
+
+    <commands>
+
+      <command name="context" help="Detect and display current secure transport context">
+        <options>
+          <option name="--json" type="flag"/>
+        </options>
+        <example>singine collibra secure context --json</example>
+      </command>
+
+      <command name="cert" help="Probe TLS certificate for a host via openssl s_client">
+        <args>
+          <arg name="host" required="true"/>
+        </args>
+        <options>
+          <option name="--port" type="int" default="443"/>
+          <option name="--json" type="flag"/>
+        </options>
+        <example>singine collibra secure cert markupware.com --port 443</example>
+      </command>
+
+      <command name="tunnel" help="Manage SSH tunnels">
+        <subcommands>
+          <subcommand name="start" help="Start a background SSH tunnel">
+            <args>
+              <arg name="remote_host" required="true"/>
+            </args>
+            <options>
+              <option name="--local-port"  type="int" default="8026"/>
+              <option name="--remote-port" type="int" default="8026"/>
+              <option name="--user"        metavar="USER"/>
+              <option name="--identity"    metavar="FILE" help="SSH identity file"/>
+              <option name="--json"        type="flag"/>
+            </options>
+            <example>singine collibra secure tunnel start edge.example.com --user deploy</example>
+          </subcommand>
+          <subcommand name="stop"   help="Stop an SSH tunnel by PID file">
+            <options><option name="--local-port" type="int" default="8026"/></options>
+            <example>singine collibra secure tunnel stop --local-port 8026</example>
+          </subcommand>
+          <subcommand name="status" help="Check whether a tunnel is active">
+            <options><option name="--local-port" type="int" default="8026"/></options>
+            <example>singine collibra secure tunnel status</example>
+          </subcommand>
+        </subcommands>
+      </command>
+
+      <command name="vpn" help="Manage WireGuard VPN">
+        <subcommands>
+          <subcommand name="status" help="Show WireGuard interface status">
+            <example>singine collibra secure vpn status</example>
+          </subcommand>
+          <subcommand name="up"   help="Bring up a WireGuard interface via wg-quick">
+            <args><arg name="config" required="true" help="Interface name or .conf path"/></args>
+            <example>singine collibra secure vpn up wg0</example>
+          </subcommand>
+          <subcommand name="down" help="Bring down a WireGuard interface via wg-quick">
+            <args><arg name="config" required="true"/></args>
+            <example>singine collibra secure vpn down wg0</example>
+          </subcommand>
+        </subcommands>
+      </command>
+
+    </commands>
+  </component>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- SDLC                                                                    -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <component name="sdlc" help="On-the-fly SDLC process generation and data-product pipeline dispatch">
+    <description>
+      Generates a .sdlc.yaml file on the fly for a given data product kind and
+      environment.  The generated file drives singine collibra sdlc pipeline /
+      dispatch to execute the steps.
+
+      Pipeline modes:
+        sequential  — steps run in order; halt on first failure
+        competing   — steps run in order; halt on first success (race)
+        fan-out     — all steps run; aggregate result reported
+
+      Data product kinds and their default step templates:
+        DataProduct      — ingest → classify → relate → constrain → verbalize → align → publish
+        AnalyticsProduct — extract → cosine → catalog → publish
+        StreamProduct    — probe → categorise → publish
+        ReportProduct    — query → bubble → publish
+        APIProduct       — register → align → publish
+
+      Env-config per environment:
+        dev     — dry_run=true,  notify=false, auto_push=false
+        staging — dry_run=false, notify=true,  auto_push=false
+        prod    — dry_run=false, notify=true,  auto_push=true
+    </description>
+    <implementation>singine-collibra/python/singine_collibra/sdlc.py</implementation>
+    <env-vars>
+      <var name="SINGINE_ENV"     choices="dev,staging,prod"/>
+      <var name="SINGINE_PROJECT" help="Default project label"/>
+    </env-vars>
+
+    <commands>
+
+      <command name="generate" help="Generate a .sdlc.yaml for a data product pipeline">
+        <options>
+          <option name="--env"     choices="dev,staging,prod" help="SDLC environment (default: SINGINE_ENV or dev)"/>
+          <option name="--mode"    choices="sequential,competing,fan-out" default="sequential"/>
+          <option name="--kind"    choices="DataProduct,AnalyticsProduct,StreamProduct,ReportProduct,APIProduct" default="DataProduct"/>
+          <option name="--project" help="Project label (default: kind)"/>
+          <option name="--out"     metavar="PATH" help="Write YAML to file (stdout if omitted)"/>
+          <option name="--json"    type="flag" help="Wrap output in JSON envelope"/>
+        </options>
+        <example>singine collibra sdlc generate --env staging --kind AnalyticsProduct --out analytics.sdlc.yaml</example>
+        <example>singine collibra sdlc generate --mode competing --kind StreamProduct</example>
+      </command>
+
+      <command name="pipeline" help="Run all steps in a .sdlc.yaml file">
+        <args>
+          <arg name="sdlc" required="true" help="Path to .sdlc.yaml"/>
+        </args>
+        <options>
+          <option name="--dry-run" type="flag"/>
+          <option name="--json"    type="flag"/>
+        </options>
+        <example>singine collibra sdlc pipeline analytics.sdlc.yaml</example>
+        <example>singine collibra sdlc pipeline analytics.sdlc.yaml --dry-run --json</example>
+      </command>
+
+      <command name="dispatch" help="Run a single named step from a .sdlc.yaml file">
+        <args>
+          <arg name="sdlc" required="true" help="Path to .sdlc.yaml"/>
+        </args>
+        <options>
+          <option name="--step"    metavar="NAME" help="Step name to run"/>
+          <option name="--dry-run" type="flag"/>
+          <option name="--json"    type="flag"/>
+        </options>
+        <example>singine collibra sdlc dispatch analytics.sdlc.yaml --step cosine</example>
+      </command>
+
+    </commands>
+  </component>
+
 </singine-collibra-commands>

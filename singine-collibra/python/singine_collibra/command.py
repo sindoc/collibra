@@ -1,4 +1,8 @@
-"""argparse registration for singine collibra id/contract/io/pipeline/server subcommands.
+"""argparse registration for singine collibra subcommands.
+
+Subcommand families:
+    id, contract, io, query, quantum, server  — original surface
+    repo, notify, secure, sdlc               — repo/pipeline/transport surface
 
 Called from singine's build_parser() via dynamic import.
 
@@ -511,3 +515,402 @@ def add_collibra_subcommands(collibra_sub: argparse._SubParsersAction) -> None:
     p = server_sub.add_parser("dmz", help="Start the server in DMZ mode (restricted endpoints)")
     p.add_argument("--port", type=int, default=7331, help="Port (default: 7331)")
     p.set_defaults(func=_cmd_server_dmz)
+
+    # ── repo ──────────────────────────────────────────────────────────────────
+    _add_repo_parser(collibra_sub)
+
+    # ── notify ────────────────────────────────────────────────────────────────
+    _add_notify_parser(collibra_sub)
+
+    # ── secure ────────────────────────────────────────────────────────────────
+    _add_secure_parser(collibra_sub)
+
+    # ── sdlc ──────────────────────────────────────────────────────────────────
+    _add_sdlc_parser(collibra_sub)
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# repo — repository discovery, daily commit, cron schedule
+# ═════════════════════════════════════════════════════════════════════════════
+
+def _cmd_repo_find(args: argparse.Namespace) -> int:
+    from pathlib import Path
+    from .repo import find_local_repos, repo_info
+    root = Path(args.root).expanduser()
+    repos = find_local_repos(root, depth=args.depth)
+    payload = {
+        "ok": True,
+        "root": str(root),
+        "count": len(repos),
+        "repos": [str(r) for r in repos],
+    }
+    return _print_payload(payload, as_json=args.json)
+
+
+def _cmd_repo_remote(args: argparse.Namespace) -> int:
+    from .repo import find_remote_repos
+    payload = find_remote_repos(
+        provider=args.provider,
+        org=args.org,
+        token=args.token,
+    )
+    return _print_payload(payload, as_json=args.json)
+
+
+def _cmd_repo_status(args: argparse.Namespace) -> int:
+    from pathlib import Path
+    from .repo import find_local_repos, repo_info
+    root = Path(args.root).expanduser()
+    repos = find_local_repos(root, depth=args.depth)
+    payload = {
+        "ok": True,
+        "root": str(root),
+        "count": len(repos),
+        "repos": [repo_info(r).as_dict() for r in repos],
+    }
+    return _print_payload(payload, as_json=args.json)
+
+
+def _cmd_repo_daily_commit(args: argparse.Namespace) -> int:
+    from pathlib import Path
+    from .repo import find_local_repos, daily_commit
+    root = Path(args.root).expanduser()
+    repos = find_local_repos(root, depth=args.depth)
+    payload = daily_commit(
+        paths=repos,
+        message=args.message,
+        dry_run=args.dry_run,
+        push=args.push,
+    )
+    return _print_payload(payload, as_json=args.json)
+
+
+def _cmd_repo_schedule_install(args: argparse.Namespace) -> int:
+    from .repo import schedule_install
+    payload = schedule_install(
+        root=args.root,
+        hour=args.hour,
+        notify_email=args.notify_email,
+        push=args.push,
+    )
+    return _print_payload(payload, as_json=args.json)
+
+
+def _cmd_repo_schedule_remove(args: argparse.Namespace) -> int:
+    from .repo import schedule_remove
+    return _print_payload(schedule_remove(), as_json=args.json)
+
+
+def _cmd_repo_schedule_status(args: argparse.Namespace) -> int:
+    from .repo import schedule_status
+    return _print_payload(schedule_status(), as_json=args.json)
+
+
+def _add_repo_parser(collibra_sub: argparse._SubParsersAction) -> None:
+    repo_parser = collibra_sub.add_parser(
+        "repo",
+        help="Repository discovery, daily commit, and cron scheduling",
+    )
+    repo_parser.set_defaults(func=lambda a: (repo_parser.print_help(), 1)[1])
+    repo_sub = repo_parser.add_subparsers(dest="collibra_repo_action")
+
+    p = repo_sub.add_parser("find", help="Scan local filesystem for git repos")
+    p.add_argument("--root", default="~/ws", help="Search root (default: ~/ws)")
+    p.add_argument("--depth", type=int, default=4, help="Max directory depth (default: 4)")
+    p.add_argument("--json", action="store_true", help="Emit JSON")
+    p.set_defaults(func=_cmd_repo_find)
+
+    p = repo_sub.add_parser("remote", help="List remote repos via REST API")
+    p.add_argument("--provider", default="github", choices=["github", "gitlab"],
+                   help="Provider (default: github)")
+    p.add_argument("--org", default="", help="Organisation or group (omit for authenticated user)")
+    p.add_argument("--token", default="", help="API token (falls back to GITHUB_TOKEN env var)")
+    p.add_argument("--json", action="store_true", help="Emit JSON")
+    p.set_defaults(func=_cmd_repo_remote)
+
+    p = repo_sub.add_parser("status", help="Show dirty/clean state of discovered repos")
+    p.add_argument("--root", default="~/ws", help="Search root (default: ~/ws)")
+    p.add_argument("--depth", type=int, default=4, help="Max directory depth (default: 4)")
+    p.add_argument("--json", action="store_true", help="Emit JSON")
+    p.set_defaults(func=_cmd_repo_status)
+
+    p = repo_sub.add_parser("daily-commit", help="Stage and commit all dirty repos under --root")
+    p.add_argument("--root", default="~/ws", help="Search root (default: ~/ws)")
+    p.add_argument("--depth", type=int, default=4, help="Max directory depth (default: 4)")
+    p.add_argument("--message", default="chore: scheduled daily commit [singine-collibra]",
+                   help="Commit message")
+    p.add_argument("--dry-run", action="store_true", help="Report without committing")
+    p.add_argument("--push", action="store_true", help="git push after each commit")
+    p.add_argument("--json", action="store_true", help="Emit JSON")
+    p.set_defaults(func=_cmd_repo_daily_commit)
+
+    schedule_parser = repo_sub.add_parser("schedule", help="Manage the daily-commit cron entry")
+    schedule_parser.set_defaults(func=lambda a: (schedule_parser.print_help(), 1)[1])
+    sched_sub = schedule_parser.add_subparsers(dest="collibra_repo_schedule_action")
+
+    p = sched_sub.add_parser("install", help="Install crontab entry for daily-commit")
+    p.add_argument("--root", default="~/ws", help="Search root passed to daily-commit")
+    p.add_argument("--hour", type=int, default=23, help="Hour (UTC) to run (default: 23)")
+    p.add_argument("--notify-email", default="", metavar="ADDR",
+                   help="Email address for commit summary (optional)")
+    p.add_argument("--push", action="store_true", help="Pass --push to daily-commit")
+    p.add_argument("--json", action="store_true", help="Emit JSON")
+    p.set_defaults(func=_cmd_repo_schedule_install)
+
+    p = sched_sub.add_parser("remove", help="Remove the daily-commit crontab entry")
+    p.add_argument("--json", action="store_true", help="Emit JSON")
+    p.set_defaults(func=_cmd_repo_schedule_remove)
+
+    p = sched_sub.add_parser("status", help="Show current cron schedule status")
+    p.add_argument("--json", action="store_true", help="Emit JSON")
+    p.set_defaults(func=_cmd_repo_schedule_status)
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# notify — SMTP email via Docker edge + markupware envelope
+# ═════════════════════════════════════════════════════════════════════════════
+
+def _cmd_notify_email(args: argparse.Namespace) -> int:
+    from .notify import send_email, send_from_stdin
+    if args.stdin:
+        payload = send_from_stdin(
+            to=args.to, subject=args.subject,
+            dry_run=args.dry_run, context=args.context,
+        )
+    else:
+        payload = send_email(
+            to=args.to, subject=args.subject,
+            body=args.body or "",
+            from_addr=args.from_addr,
+            dry_run=args.dry_run,
+            context=args.context,
+        )
+    return _print_payload(payload, as_json=args.json)
+
+
+def _cmd_notify_status(args: argparse.Namespace) -> int:
+    from .notify import smtp_status
+    return _print_payload(smtp_status(), as_json=args.json)
+
+
+def _cmd_notify_configure(args: argparse.Namespace) -> int:
+    from .notify import notify_configure
+    payload = notify_configure(
+        smtp_url=args.smtp_url,
+        edge_host=args.edge_host,
+        from_addr=args.from_addr,
+    )
+    return _print_payload(payload, as_json=args.json)
+
+
+def _add_notify_parser(collibra_sub: argparse._SubParsersAction) -> None:
+    notify_parser = collibra_sub.add_parser(
+        "notify",
+        help="SMTP email via Docker edge instance with Markupware envelope",
+    )
+    notify_parser.set_defaults(func=lambda a: (notify_parser.print_help(), 1)[1])
+    notify_sub = notify_parser.add_subparsers(dest="collibra_notify_action")
+
+    p = notify_sub.add_parser("email", help="Send an email through the edge smtpAgent service")
+    p.add_argument("--to", required=True, metavar="ADDR", help="Recipient address")
+    p.add_argument("--subject", required=True, help="Email subject")
+    p.add_argument("--body", default="", help="Plain-text body (or use --stdin)")
+    p.add_argument("--stdin", action="store_true", help="Read body from stdin")
+    p.add_argument("--from", dest="from_addr", default="", metavar="ADDR",
+                   help="Sender address (default: SINGINE_NOTIFY_FROM env var)")
+    p.add_argument("--dry-run", action="store_true", help="Print payload without sending")
+    p.add_argument("--context", default="", help="SDLC context label for Markupware headers")
+    p.add_argument("--json", action="store_true", help="Emit JSON")
+    p.set_defaults(func=_cmd_notify_email)
+
+    p = notify_sub.add_parser("status", help="Health check of the smtpAgent service")
+    p.add_argument("--json", action="store_true", help="Emit JSON")
+    p.set_defaults(func=_cmd_notify_status)
+
+    p = notify_sub.add_parser("configure", help="Show or validate notification configuration")
+    p.add_argument("--smtp-url", default="", help="Override smtpAgent endpoint URL")
+    p.add_argument("--edge-host", default="", help="Docker edge host for smtpAgent")
+    p.add_argument("--from", dest="from_addr", default="", metavar="ADDR", help="Default from address")
+    p.add_argument("--json", action="store_true", help="Emit JSON")
+    p.set_defaults(func=_cmd_notify_configure)
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# secure — context-aware transport (TLS / SSH tunnel / WireGuard / markupware)
+# ═════════════════════════════════════════════════════════════════════════════
+
+def _cmd_secure_context(args: argparse.Namespace) -> int:
+    from .secure import detect_context
+    return _print_payload(detect_context().as_dict(), as_json=args.json)
+
+
+def _cmd_secure_cert(args: argparse.Namespace) -> int:
+    from .secure import openssl_cert_info
+    return _print_payload(openssl_cert_info(args.host, args.port), as_json=args.json)
+
+
+def _cmd_secure_tunnel_start(args: argparse.Namespace) -> int:
+    from .secure import ssh_tunnel_start
+    payload = ssh_tunnel_start(
+        remote_host=args.remote_host,
+        local_port=args.local_port,
+        remote_port=args.remote_port,
+        remote_user=args.user,
+        identity_file=args.identity,
+    )
+    return _print_payload(payload, as_json=args.json)
+
+
+def _cmd_secure_tunnel_stop(args: argparse.Namespace) -> int:
+    from .secure import ssh_tunnel_stop
+    return _print_payload(ssh_tunnel_stop(local_port=args.local_port), as_json=args.json)
+
+
+def _cmd_secure_tunnel_status(args: argparse.Namespace) -> int:
+    from .secure import ssh_tunnel_status
+    return _print_payload(ssh_tunnel_status(local_port=args.local_port), as_json=args.json)
+
+
+def _cmd_secure_vpn_status(args: argparse.Namespace) -> int:
+    from .secure import vpn_status
+    return _print_payload(vpn_status(), as_json=args.json)
+
+
+def _cmd_secure_vpn_up(args: argparse.Namespace) -> int:
+    from .secure import vpn_up
+    return _print_payload(vpn_up(args.config), as_json=args.json)
+
+
+def _cmd_secure_vpn_down(args: argparse.Namespace) -> int:
+    from .secure import vpn_down
+    return _print_payload(vpn_down(args.config), as_json=args.json)
+
+
+def _add_secure_parser(collibra_sub: argparse._SubParsersAction) -> None:
+    secure_parser = collibra_sub.add_parser(
+        "secure",
+        help="Context-aware secure transport: TLS, SSH tunnel, WireGuard VPN",
+    )
+    secure_parser.set_defaults(func=lambda a: (secure_parser.print_help(), 1)[1])
+    secure_sub = secure_parser.add_subparsers(dest="collibra_secure_action")
+
+    p = secure_sub.add_parser("context", help="Detect and display current secure transport context")
+    p.add_argument("--json", action="store_true", help="Emit JSON")
+    p.set_defaults(func=_cmd_secure_context)
+
+    p = secure_sub.add_parser("cert", help="Probe TLS certificate for a host via openssl s_client")
+    p.add_argument("host", help="Hostname to probe")
+    p.add_argument("--port", type=int, default=443, help="Port (default: 443)")
+    p.add_argument("--json", action="store_true", help="Emit JSON")
+    p.set_defaults(func=_cmd_secure_cert)
+
+    tunnel_parser = secure_sub.add_parser("tunnel", help="Manage SSH tunnels")
+    tunnel_parser.set_defaults(func=lambda a: (tunnel_parser.print_help(), 1)[1])
+    tunnel_sub = tunnel_parser.add_subparsers(dest="collibra_secure_tunnel_action")
+
+    p = tunnel_sub.add_parser("start", help="Start a background SSH tunnel")
+    p.add_argument("remote_host", help="Remote host to tunnel through")
+    p.add_argument("--local-port", type=int, default=8026, help="Local bind port (default: 8026)")
+    p.add_argument("--remote-port", type=int, default=8026, help="Remote port (default: 8026)")
+    p.add_argument("--user", default="", help="SSH username")
+    p.add_argument("--identity", default="", metavar="FILE", help="SSH identity file")
+    p.add_argument("--json", action="store_true", help="Emit JSON")
+    p.set_defaults(func=_cmd_secure_tunnel_start)
+
+    p = tunnel_sub.add_parser("stop", help="Stop an SSH tunnel")
+    p.add_argument("--local-port", type=int, default=8026, help="Local port of tunnel to stop")
+    p.add_argument("--json", action="store_true", help="Emit JSON")
+    p.set_defaults(func=_cmd_secure_tunnel_stop)
+
+    p = tunnel_sub.add_parser("status", help="Check whether an SSH tunnel is active")
+    p.add_argument("--local-port", type=int, default=8026, help="Local port to check")
+    p.add_argument("--json", action="store_true", help="Emit JSON")
+    p.set_defaults(func=_cmd_secure_tunnel_status)
+
+    vpn_parser = secure_sub.add_parser("vpn", help="Manage WireGuard VPN")
+    vpn_parser.set_defaults(func=lambda a: (vpn_parser.print_help(), 1)[1])
+    vpn_sub = vpn_parser.add_subparsers(dest="collibra_secure_vpn_action")
+
+    p = vpn_sub.add_parser("status", help="Show WireGuard interface status")
+    p.add_argument("--json", action="store_true", help="Emit JSON")
+    p.set_defaults(func=_cmd_secure_vpn_status)
+
+    p = vpn_sub.add_parser("up", help="Bring up a WireGuard interface via wg-quick")
+    p.add_argument("config", help="Interface name or path to .conf file")
+    p.add_argument("--json", action="store_true", help="Emit JSON")
+    p.set_defaults(func=_cmd_secure_vpn_up)
+
+    p = vpn_sub.add_parser("down", help="Bring down a WireGuard interface via wg-quick")
+    p.add_argument("config", help="Interface name or path to .conf file")
+    p.add_argument("--json", action="store_true", help="Emit JSON")
+    p.set_defaults(func=_cmd_secure_vpn_down)
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# sdlc — on-the-fly SDLC process generation and pipeline dispatch
+# ═════════════════════════════════════════════════════════════════════════════
+
+def _cmd_sdlc_generate(args: argparse.Namespace) -> int:
+    from pathlib import Path as _Path
+    from .sdlc import generate
+    out = _Path(args.out).expanduser() if args.out else None
+    payload = generate(
+        env=args.env,
+        mode=args.mode,
+        kind=args.kind,
+        out=out,
+        project=args.project,
+    )
+    return _print_payload(payload, as_json=args.json)
+
+
+def _cmd_sdlc_pipeline(args: argparse.Namespace) -> int:
+    from pathlib import Path as _Path
+    from .sdlc import dispatch
+    sdlc_path = _Path(args.sdlc).expanduser()
+    payload = dispatch(sdlc_path=sdlc_path, dry_run=args.dry_run)
+    return _print_payload(payload, as_json=args.json)
+
+
+def _cmd_sdlc_dispatch(args: argparse.Namespace) -> int:
+    from pathlib import Path as _Path
+    from .sdlc import dispatch
+    sdlc_path = _Path(args.sdlc).expanduser()
+    payload = dispatch(sdlc_path=sdlc_path, step_name=args.step, dry_run=args.dry_run)
+    return _print_payload(payload, as_json=args.json)
+
+
+def _add_sdlc_parser(collibra_sub: argparse._SubParsersAction) -> None:
+    from .sdlc import KNOWN_KINDS, KNOWN_MODES, KNOWN_ENVS
+    sdlc_parser = collibra_sub.add_parser(
+        "sdlc",
+        help="On-the-fly SDLC process generation and data-product pipeline dispatch",
+    )
+    sdlc_parser.set_defaults(func=lambda a: (sdlc_parser.print_help(), 1)[1])
+    sdlc_sub = sdlc_parser.add_subparsers(dest="collibra_sdlc_action")
+
+    p = sdlc_sub.add_parser("generate", help="Generate a .sdlc.yaml for a data product pipeline")
+    p.add_argument("--env", default="", choices=KNOWN_ENVS + [""],
+                   help="SDLC environment (default: SINGINE_ENV or dev)")
+    p.add_argument("--mode", default="sequential", choices=KNOWN_MODES,
+                   help="Pipeline dispatch mode (default: sequential)")
+    p.add_argument("--kind", default="DataProduct", choices=KNOWN_KINDS,
+                   help="Data product kind (default: DataProduct)")
+    p.add_argument("--project", default="", help="Project label (default: kind)")
+    p.add_argument("--out", default="", metavar="PATH",
+                   help="Write YAML to this path (stdout if omitted)")
+    p.add_argument("--json", action="store_true", help="Emit JSON envelope")
+    p.set_defaults(func=_cmd_sdlc_generate)
+
+    p = sdlc_sub.add_parser("pipeline", help="Run all steps in a .sdlc.yaml file")
+    p.add_argument("sdlc", help="Path to .sdlc.yaml file")
+    p.add_argument("--dry-run", action="store_true", help="Report steps without executing")
+    p.add_argument("--json", action="store_true", help="Emit JSON")
+    p.set_defaults(func=_cmd_sdlc_pipeline)
+
+    p = sdlc_sub.add_parser("dispatch", help="Run a single named step from a .sdlc.yaml file")
+    p.add_argument("sdlc", help="Path to .sdlc.yaml file")
+    p.add_argument("--step", default="", metavar="NAME", help="Step name to run")
+    p.add_argument("--dry-run", action="store_true", help="Report without executing")
+    p.add_argument("--json", action="store_true", help="Emit JSON")
+    p.set_defaults(func=_cmd_sdlc_dispatch)
