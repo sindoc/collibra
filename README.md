@@ -437,6 +437,29 @@ singine collibra edge setup --dev
 singine collibra edge test
 ```
 
+### Agent doc generation
+
+The repository-level `AGENTS.md`, `CLAUDE.md`, and `CODEX.md` files are generated
+from `docs/xml/singine-agent-contract.xml` by
+`scripts/generate_agent_docs.py`.
+
+The generator now supports fully mocked repository roots for test replication.
+That lets us validate template changes against temporary fixture repos before
+writing the checked-in markdown files.
+
+```bash
+# Regenerate the checked-in agent docs
+make agent-docs
+
+# Run the generator tests, including mocked contract/template repos
+python -m unittest singine-collibra/python/tests/test_generate_agent_docs.py -v
+
+# Example: render against a temporary or alternate repo root
+python scripts/generate_agent_docs.py \
+  --repo-root /tmp/mock-collibra \
+  --workspace-root /c/cygwin64/home/user/ws
+```
+
 ### Linting shell scripts
 
 All scripts use `set -euo pipefail`. Verify with:
