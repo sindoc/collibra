@@ -321,6 +321,43 @@
           }
         }
       }
+    },
+    "/api/collibra/io/edge/site/propose": {
+      "get": {
+        "operationId": "collibraIoEdgeSitePropose",
+        "summary": "Look up an edge site in Collibra via chip and return a full command plan",
+        "responses": {
+          "200": {
+            "description": "Command result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandResult"
+                }
+              }
+            }
+          }
+        },
+        "description": "CLI example: `singine collibra io edge site propose sindoc-edge --json`",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "json",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ]
+      }
     }
   },
   "components": {

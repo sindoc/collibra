@@ -51,7 +51,14 @@ singine collibra io chip tools list --json
 ```bash
 singine collibra io edge connection probe-postgres --json
 singine collibra io edge datasource diagnose --id DATASOURCE-UUID --json
+singine collibra io edge site propose sindoc-edge --json
 ```
+
+`edge site propose` resolves the site name against Collibra via the chip MCP
+server, then emits a full ordered command plan covering prereqs, deploy,
+verify, monitor, diagnose, and teardown phases.  The plan is valid even when
+chip is unavailable (offline mode); the Collibra lookup enriches it with a
+governed `collibra_id` and `asset_type` when the server responds.
 
 ## Companion artifacts
 

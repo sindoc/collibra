@@ -356,6 +356,19 @@
               </command>
             </subcommands>
           </command>
+          <command name="site" help="Governed edge site lifecycle proposals">
+            <subcommands>
+              <command name="propose" help="Look up an edge site in Collibra via chip and return a full command plan">
+                <args>
+                  <arg name="name" required="true" help="Edge site name to look up and plan commands for"/>
+                </args>
+                <options>
+                  <option name="--json" type="flag"/>
+                </options>
+                <example>singine collibra io edge site propose sindoc-edge --json</example>
+              </command>
+            </subcommands>
+          </command>
         </subcommands>
       </command>
     </commands>
