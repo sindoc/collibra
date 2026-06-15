@@ -284,6 +284,157 @@ def grpc_http_call(req: GrpcHttpRequest) -> Dict[str, Any]:
         return {"ok": False, "error": str(exc)}
 
 
+# ── Edge site proposal ────────────────────────────────────────────────────────
+
+@dataclass
+class ProposedCommand:
+    """One command in an edge-site execution plan."""
+    phase: str
+    command: str
+    description: str
+    required: bool = True
+
+
+@dataclass
+class EdgeSiteProposal:
+    """Full ordered command plan for a governed edge site.
+
+    Generated from a chip codeLookup against the site name; the Collibra
+    identity anchors the plan to a governed record.
+    """
+    site_name: str
+    collibra_id: str
+    asset_type: str
+    commands: List["ProposedCommand"]
+    lookup_ok: bool
+    lookup_raw: Dict[str, Any] = field(default_factory=dict)
+
+    def as_dict(self) -> Dict[str, Any]:
+        return {
+            "ok": True,
+            "command": "collibra io edge site propose",
+            "site_name": self.site_name,
+            "collibra_id": self.collibra_id,
+            "asset_type": self.asset_type,
+            "lookup_ok": self.lookup_ok,
+            "lookup_raw": self.lookup_raw,
+            "command_count": len(self.commands),
+            "commands": [
+                {
+                    "phase": c.phase,
+                    "command": c.command,
+                    "description": c.description,
+                    "required": c.required,
+                }
+                for c in self.commands
+            ],
+        }
+
+
+def _build_site_commands(site_name: str) -> List[ProposedCommand]:
+    """Return the ordered lifecycle command plan for a Collibra edge site."""
+    return [
+        ProposedCommand(
+            phase="prereqs",
+            command="singine collibra edge k8s prereqs",
+            description="Verify helm, kubectl, jq, yq, and cluster access",
+        ),
+        ProposedCommand(
+            phase="deploy",
+            command=f"singine collibra edge site init {site_name}",
+            description="Bootstrap the edge site from the installer bundle",
+        ),
+        ProposedCommand(
+            phase="deploy",
+            command="singine collibra edge k8s install",
+            description="Deploy via Helm directly (alternative to site init)",
+            required=False,
+        ),
+        ProposedCommand(
+            phase="verify",
+            command="singine collibra edge k8s status --namespace collibra-edge",
+            description="Check Helm release and pod health",
+        ),
+        ProposedCommand(
+            phase="verify",
+            command="singine collibra edge k8s test --namespace collibra-edge",
+            description="Run the edge test suite against the deployed site",
+        ),
+        ProposedCommand(
+            phase="monitor",
+            command="singine collibra edge k8s logs edge-controller --follow",
+            description="Stream edge-controller pod logs",
+            required=False,
+        ),
+        ProposedCommand(
+            phase="monitor",
+            command="singine collibra edge k8s logs edge-proxy --follow",
+            description="Stream edge-proxy pod logs",
+            required=False,
+        ),
+        ProposedCommand(
+            phase="diagnose",
+            command="singine collibra io edge connection probe-postgres --json",
+            description="Preflight PostgreSQL-backed Edge connections",
+            required=False,
+        ),
+        ProposedCommand(
+            phase="diagnose",
+            command="singine collibra io edge datasource diagnose --id <datasource-uuid> --json",
+            description="Diagnose a specific datasource wiring issue",
+            required=False,
+        ),
+        ProposedCommand(
+            phase="teardown",
+            command="singine collibra edge k8s uninstall",
+            description="Helm uninstall and delete the collibra-edge namespace",
+            required=False,
+        ),
+    ]
+
+
+def edge_site_propose(ctx: WorkspaceContext, site_name: str) -> LambdaExec:
+    """Look up a governed edge site via chip and return a full command plan.
+
+    The chip ``collibra/code_lookup`` result (scope ``edge-site``) anchors
+    the proposal to a governed Collibra identity.  The plan covers the full
+    lifecycle: prereqs → deploy → verify → monitor → diagnose → teardown.
+    """
+    def _fn() -> Dict[str, Any]:
+        lookup_exec = ctx.codeLookup(site_name, scope="edge-site").exec()
+        lookup_result = lookup_exec.try_catch_claude()
+
+        lookup_ok = isinstance(lookup_result, ChipResponse) and lookup_result.ok
+        collibra_id = ""
+        asset_type = ""
+        lookup_raw: Dict[str, Any] = {}
+
+        if isinstance(lookup_result, ChipResponse):
+            raw = lookup_result.result or {}
+            content = raw.get("content", [{}])
+            try:
+                data = json.loads(content[0].get("text", "{}")) if content else {}
+            except (json.JSONDecodeError, IndexError, TypeError):
+                data = {}
+            collibra_id = data.get("collibra_id", "")
+            asset_type = data.get("asset_type", "")
+            lookup_raw = data
+        elif isinstance(lookup_result, dict):
+            lookup_raw = lookup_result
+
+        proposal = EdgeSiteProposal(
+            site_name=site_name,
+            collibra_id=collibra_id,
+            asset_type=asset_type,
+            commands=_build_site_commands(site_name),
+            lookup_ok=lookup_ok,
+            lookup_raw=lookup_raw,
+        )
+        return proposal.as_dict()
+
+    return LambdaExec(fn=_fn)
+
+
 # ── JProfiler attachment descriptors ─────────────────────────────────────────
 
 @dataclass

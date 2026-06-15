@@ -991,6 +991,38 @@ def cmd_collibra_io_edge_datasource_diagnose(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_collibra_io_edge_site_propose(args: argparse.Namespace) -> int:
+    from .chip_queries import WorkspaceContext, WorkspaceDepth, edge_site_propose
+
+    ctx = WorkspaceContext(depth=WorkspaceDepth.SELF)
+    result = edge_site_propose(ctx, args.name).exec().try_catch_claude()
+    if not isinstance(result, dict):
+        result = {"ok": False, "error": str(result)}
+
+    if args.json:
+        import json as _json
+        print(_json.dumps(result))
+        return 0 if result.get("ok") else 1
+
+    print(f"[collibra io edge site propose] site={result.get('site_name')}")
+    lookup_label = "ok" if result.get("lookup_ok") else "chip not available (offline — commands still valid)"
+    print(f"  Collibra lookup: {lookup_label}")
+    if result.get("collibra_id"):
+        print(f"  Collibra ID:     {result['collibra_id']}")
+    if result.get("asset_type"):
+        print(f"  Asset type:      {result['asset_type']}")
+    print(f"\n  Proposed commands ({result.get('command_count', 0)} total):\n")
+    current_phase = None
+    for cmd in result.get("commands", []):
+        if cmd["phase"] != current_phase:
+            current_phase = cmd["phase"]
+            print(f"  -- {current_phase} --")
+        optional = "  [optional]" if not cmd["required"] else ""
+        print(f"    {cmd['command']}{optional}")
+        print(f"      # {cmd['description']}")
+    return 0 if result.get("ok") else 1
+
+
 def add_collibra_io_parser(collibra_sub: argparse._SubParsersAction) -> None:
     io_parser = collibra_sub.add_parser(
         "io",
@@ -1177,3 +1209,18 @@ def add_collibra_io_parser(collibra_sub: argparse._SubParsersAction) -> None:
     diagnose_parser.add_argument("--tail", type=int, default=600, help="Number of controller log lines to inspect (default: 600)")
     diagnose_parser.add_argument("--json", action="store_true")
     diagnose_parser.set_defaults(func=cmd_collibra_io_edge_datasource_diagnose)
+
+    site_parser = edge_sub.add_parser(
+        "site",
+        help="Governed edge site lifecycle proposals",
+    )
+    site_parser.set_defaults(func=lambda a: (site_parser.print_help(), 1)[1])
+    site_sub = site_parser.add_subparsers(dest="collibra_io_edge_site_action")
+
+    propose_parser = site_sub.add_parser(
+        "propose",
+        help="Look up an edge site in Collibra via chip and return a full command plan",
+    )
+    propose_parser.add_argument("name", help="Edge site name to look up and plan commands for")
+    propose_parser.add_argument("--json", action="store_true")
+    propose_parser.set_defaults(func=cmd_collibra_io_edge_site_propose)

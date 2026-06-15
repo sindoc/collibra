@@ -27,7 +27,10 @@
   (command "edge-connection-probe-postgres"
     (argv "singine" "collibra" "io" "edge" "connection" "probe-postgres" "--json"))
   (command "edge-datasource-diagnose"
-    (argv "singine" "collibra" "io" "edge" "datasource" "diagnose" "--id" "DATASOURCE-UUID" "--json")))
+    (argv "singine" "collibra" "io" "edge" "datasource" "diagnose" "--id" "DATASOURCE-UUID" "--json"))
+  (command "edge-site-propose"
+    (argv "singine" "collibra" "io" "edge" "site" "propose" "sindoc-edge" "--json")
+    (reads "~/ws/github/collibra/chip/.build/chip")))
 
 (test-suite "singine-collibra-io"
   (test "openapi-path-count"
